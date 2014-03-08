@@ -1,0 +1,16 @@
+Power:
+- Rot (fett): ~3V
+- Blau (fett): GND
+- Rot (dünn): 5V
+- Orange (dünn): 5 bis 10V, Helligkeitsregelung
+- Blau (dünn): GND
+
+Daten (Flachbandkabel):
+- 1: 5V
+- 2:
+- 3:
+- 4: CLK
+- 5: LOAD
+- 6: GND
+- 7:
+- 8: Data In
