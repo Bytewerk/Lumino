@@ -33,6 +33,55 @@
 #define PIN_DATA	 GPIO8
 #define PIN_LOAD	 GPIO9
 
+const uint32_t blockMapping[8][4] = {
+	{25, 30,  6,  5},
+	{29, 31,  2,  1},
+	{27, 28,  0,  3},
+	{24, 26,  4,  7},
+	{23, 22,  8,  9},
+	{21, 19, 11, 10},
+	{18, 17, 14, 12},
+	{16, 20, 13, 15}
+};
+
+#define FRAMEBUFFER_SIZE    24
+
+uint32_t framebuffer[FRAMEBUFFER_SIZE];
+
+#define SEND_FRAMEBUFFER (1 << 0)
+
+volatile uint32_t globalFlags = SEND_FRAMEBUFFER;
+
+static void set_pixel_in_block(uint32_t *data, uint32_t x, uint32_t y, bool enable)
+{
+	if(enable) {
+		//*data |= (1 << blockMapping[y][x]);
+		*data |= (1 << (31 - blockMapping[y][x]));
+	} else {
+		//*data &= ~(1 << blockMapping[y][x]);
+		*data &= ~(1 << (31 - blockMapping[y][x]));
+	}
+}
+
+static void set_pixel(uint32_t x, uint32_t y, bool enable)
+{
+	uint32_t blockX = x / 4;
+	uint32_t blockY = y / 8;
+
+	uint32_t blockIdx = blockY * 8 + blockX;
+
+	set_pixel_in_block(&(framebuffer[blockIdx]), x - (4 * blockX), y - (8 * blockY), enable);
+}
+
+static void update_framebuffer(void)
+{
+	static uint32_t x = 0;
+	static uint32_t y = 0;
+
+	set_pixel(x, y, true);
+	x++;
+}
+
 static void init_gpio(void)
 {
 	// Set up LED outputs for PWM
@@ -134,9 +183,11 @@ int main(void)
 	init_gpio();
 	init_timer();
 
-	gpio_set(PORT_LOAD, PIN_LOAD);
-
 	while (1) {
+		if(!(globalFlags & SEND_FRAMEBUFFER)) {
+			update_framebuffer();
+			globalFlags |= SEND_FRAMEBUFFER;
+		}
 	}
 
 	return 0;
@@ -145,38 +196,50 @@ int main(void)
 void tim1_up_tim10_isr(void)
 {
 	static uint32_t tickCount = 0;
+
 	static uint32_t bitIndex = 0;
-	static uint32_t delay = 10;
+	static uint32_t blockIndex = 0;
+
 	static bool risingEdge = false;
 
 	// check for update interrupt
 	if(TIM1_SR & TIM_SR_UIF) {
-		if((tickCount % delay) == 0) {
+		if(globalFlags & SEND_FRAMEBUFFER) {
+			gpio_clear(PORT_LOAD, PIN_LOAD);
+
 			if(risingEdge) {
 				// rising edge
 				gpio_set(PORT_CLK, PIN_CLK);
+
 				bitIndex++;
+				if(bitIndex == 33) {
+					blockIndex++;
+
+					if(blockIndex == 24) {
+						gpio_set(PORT_LOAD, PIN_LOAD);
+						blockIndex = 0;
+
+						globalFlags &= ~SEND_FRAMEBUFFER;
+					}
+
+					bitIndex = 0;
+				}
+
 				risingEdge = false;
 			} else {
 				// falling edge
 				gpio_clear(PORT_CLK, PIN_CLK);
-				if(bitIndex >= 24*33-1) {
-					if((bitIndex % 33) == 0) {
+
+				// update data pin
+				if(bitIndex < 32) {
+					if((framebuffer[blockIndex] & (1 << (bitIndex))) != 0) {
 						gpio_set(PORT_DATA, PIN_DATA);
 					} else {
 						gpio_clear(PORT_DATA, PIN_DATA);
 					}
-				} else {
-					gpio_clear(PORT_DATA, PIN_DATA);
 				}
 
 				risingEdge = true;
-			}
-
-			if(bitIndex < 24*33) {
-				delay = 10;
-			} else {
-				delay = 25000;
 			}
 		}
 
