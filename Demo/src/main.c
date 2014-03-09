@@ -23,7 +23,7 @@
 #include <libopencm3/stm32/f4/timer.h>
 #include <libopencm3/cm3/nvic.h>
 
-#include <stdio.h>
+#include <stdlib.h>
 
 #define PORT_CLK	 GPIOE
 #define PORT_DATA  GPIOE
@@ -44,9 +44,9 @@ const uint32_t blockMapping[8][4] = {
 	{16, 20, 13, 15}
 };
 
-#define FRAMEBUFFER_SIZE    24
+#define MODULEBUFFER_SIZE    24
 
-uint32_t framebuffer[FRAMEBUFFER_SIZE];
+uint32_t modulebuffer[MODULEBUFFER_SIZE];
 
 #define SEND_FRAMEBUFFER (1 << 0)
 
@@ -70,16 +70,30 @@ static void set_pixel(uint32_t x, uint32_t y, bool enable)
 
 	uint32_t blockIdx = blockY * 8 + blockX;
 
-	set_pixel_in_block(&(framebuffer[blockIdx]), x - (4 * blockX), y - (8 * blockY), enable);
+	set_pixel_in_block(&(modulebuffer[blockIdx]), x - (4 * blockX), y - (8 * blockY), enable);
 }
 
-static void update_framebuffer(void)
+static void update_modulebuffer(void)
 {
-	static uint32_t x = 0;
-	static uint32_t y = 0;
+	static int phase = 0;
 
-	set_pixel(x, y, true);
-	x++;
+	// clear it all
+	//for(int i = 0; i < MODULEBUFFER_SIZE; i++) {
+	//	modulebuffer[i] = 0;
+	//}
+
+	//for(int x = 0; x < 32; x++) {
+	//	for(int y = 0; y < 24; y++) {
+	//		set_pixel(x, y, (x + y + phase) & 0x1);
+	//	}
+	//}
+	
+	set_pixel(rand() % 32, rand() % 24, true);
+	set_pixel(rand() % 32, rand() % 24, false);
+	set_pixel(rand() % 32, rand() % 24, true);
+	set_pixel(rand() % 32, rand() % 24, false);
+
+	phase++;
 }
 
 static void init_gpio(void)
@@ -140,7 +154,7 @@ static void init_timer(void)
 	TIM1_PSC = 119; // count up by 1 every 1 us
 
 	// auto-reload (maximum value)
-	TIM1_ARR = 99; // overflow every 100 us
+	TIM1_ARR = 1; // overflow every 100 us
 
 	// 48 kHz interrupt frequency
 	// TIM1_PSC = 24; // count up by 1 every 208.33 ns
@@ -185,7 +199,7 @@ int main(void)
 
 	while (1) {
 		if(!(globalFlags & SEND_FRAMEBUFFER)) {
-			update_framebuffer();
+			update_modulebuffer();
 			globalFlags |= SEND_FRAMEBUFFER;
 		}
 	}
@@ -232,7 +246,7 @@ void tim1_up_tim10_isr(void)
 
 				// update data pin
 				if(bitIndex < 32) {
-					if((framebuffer[blockIndex] & (1 << (bitIndex))) != 0) {
+					if((modulebuffer[blockIndex] & (1 << (bitIndex))) != 0) {
 						gpio_set(PORT_DATA, PIN_DATA);
 					} else {
 						gpio_clear(PORT_DATA, PIN_DATA);
