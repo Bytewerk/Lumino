@@ -14,18 +14,18 @@
 // // // // // // // // // // 
 // PORTS AND PINS
 // // // // // // // // // // 
-#define PORT_CLK	 GPIOE
-#define PORT_DATA	 GPIOE
-#define PORT_LOAD	 GPIOE
+#define PORT_CLK	 GPIOC
+#define PORT_DATA	 GPIOA
+#define PORT_LOAD	 GPIOC
 
-#define PIN_CLK		 GPIO8
-#define PIN_LOAD	 GPIO7
+#define PIN_CLK		 GPIO0
+#define PIN_LOAD	 GPIO1
 
-#define PIN_DATA_1	GPIO9
-#define PIN_DATA_2	GPIO10
-#define PIN_DATA_3	GPIO11
-#define PIN_DATA_4	GPIO12
-#define PIN_DATA_5	GPIO13
+#define PIN_DATA_1	GPIO2
+#define PIN_DATA_2	GPIO3
+#define PIN_DATA_3	GPIO5
+#define PIN_DATA_4	GPIO6
+#define PIN_DATA_5	GPIO4
 
 
 

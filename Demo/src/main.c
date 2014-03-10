@@ -38,12 +38,14 @@ static void update_modulebuffer(void)
 	//	modulebuffer[i] = 0;
 	//}
 
-	//for(int x = 0; x < 32; x++) {
-	//	for(int y = 0; y < 24; y++) {
-	//		set_pixel(x, y, (x + y + phase) & 0x1);
-	//	}
-	//}
+	for(int x = 0; x < 32*5; x++) {
+		for(int y = 0; y < 24; y++) {
+			led_disp_set_pixel(x, y, (x + y + phase) & 0x1);
+		}
+	}
 	
+    led_disp_flip_buffers();
+
 	//set_pixel(rand() % 32, rand() % 24, true);
 	//set_pixel(rand() % 32, rand() % 24, false);
 	//set_pixel(rand() % 32, rand() % 24, true);

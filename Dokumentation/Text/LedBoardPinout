@@ -9,8 +9,8 @@ Daten (Flachbandkabel):
 - 1: 5V
 - 2:
 - 3:
-- 4: CLK
-- 5: LOAD
+- 4: CLK - PC0
+- 5: LOAD - PC1
 - 6: GND
 - 7:
-- 8: Data In
+- 8: Data In - PA2, PA3, PA5, PA6, PA4
