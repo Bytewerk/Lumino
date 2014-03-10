@@ -25,14 +25,24 @@
 
 #include <stdlib.h>
 
+#define MODULEBUFFER_SIZE    24
+#define NUM_MODULES 5
+
 #define PORT_CLK	 GPIOE
-#define PORT_DATA  GPIOE
-#define PORT_LOAD  GPIOE
+#define PORT_DATA	 GPIOE
+#define PORT_LOAD	 GPIOE
 
 #define PIN_CLK		 GPIO7
-#define PIN_DATA	 GPIO8
 #define PIN_LOAD	 GPIO9
+uint32_t PIN_DATA[NUM_MODULES] = {	// this is not very fancy but it'll do...
+	GPIO6,														// TODO: find free pins
+	GPIO7,
+	GPIO8,
+	GPIO9,
+	GPIO10
+};
 
+// Mapping of LED position to bit in one block
 const uint32_t blockMapping[8][4] = {
 	{25, 30,  6,  5},
 	{29, 31,  2,  1},
@@ -44,9 +54,13 @@ const uint32_t blockMapping[8][4] = {
 	{16, 20, 13, 15}
 };
 
-#define MODULEBUFFER_SIZE    24
+struct framebuffer_t{
+	uint32_t modulebuffer[NUM_MODULES][MODULEBUFFER_SIZE];
+};
 
-uint32_t modulebuffer[MODULEBUFFER_SIZE];
+struct framebuffer_t framebuffer1, framebuffer2;
+struct framebuffer_t *onscreenBuffer	= &framebuffer1;
+struct framebuffer_t *offscreenBuffer	= &framebuffer2;
 
 #define SEND_FRAMEBUFFER (1 << 0)
 
@@ -63,7 +77,7 @@ static void set_pixel_in_block(uint32_t *data, uint32_t x, uint32_t y, bool enab
 	}
 }
 
-static void set_pixel(uint32_t x, uint32_t y, bool enable)
+static void set_pixel_in_module(uint32_t *modulebuffer, uint32_t x, uint32_t y, bool enable)
 {
 	uint32_t blockX = x / 4;
 	uint32_t blockY = y / 8;
@@ -71,6 +85,12 @@ static void set_pixel(uint32_t x, uint32_t y, bool enable)
 	uint32_t blockIdx = blockY * 8 + blockX;
 
 	set_pixel_in_block(&(modulebuffer[blockIdx]), x - (4 * blockX), y - (8 * blockY), enable);
+}
+
+static void set_pixel(struct framebuffer_t *framebuffer, uint32_t x, uint32_t y, bool enable){
+	uint32_t moduleIdx = x/32;
+
+	set_pixel_in_module(framebuffer->modulebuffer[moduleIdx], x - (32*moduleIdx), y, enable);
 }
 
 static void update_modulebuffer(void)
@@ -88,10 +108,10 @@ static void update_modulebuffer(void)
 	//	}
 	//}
 	
-	set_pixel(rand() % 32, rand() % 24, true);
-	set_pixel(rand() % 32, rand() % 24, false);
-	set_pixel(rand() % 32, rand() % 24, true);
-	set_pixel(rand() % 32, rand() % 24, false);
+	//set_pixel(rand() % 32, rand() % 24, true);
+	//set_pixel(rand() % 32, rand() % 24, false);
+	//set_pixel(rand() % 32, rand() % 24, true);
+	//set_pixel(rand() % 32, rand() % 24, false);
 
 	phase++;
 }
@@ -105,7 +125,9 @@ static void init_gpio(void)
 	gpio_set_af(GPIOD, 2, GPIO12 | GPIO13 | GPIO14 | GPIO15);
 
 	gpio_mode_setup(PORT_CLK, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, PIN_CLK);
-	gpio_mode_setup(PORT_DATA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, PIN_DATA);
+	for(int i=0; i< NUM_MODULES; i++){
+		gpio_mode_setup(PORT_DATA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, PIN_DATA[i]);
+	}
 	gpio_mode_setup(PORT_LOAD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, PIN_LOAD);
 }
 
@@ -246,10 +268,12 @@ void tim1_up_tim10_isr(void)
 
 				// update data pin
 				if(bitIndex < 32) {
-					if((modulebuffer[blockIndex] & (1 << (bitIndex))) != 0) {
-						gpio_set(PORT_DATA, PIN_DATA);
-					} else {
-						gpio_clear(PORT_DATA, PIN_DATA);
+					for(int moduleIdx = 0; moduleIdx < NUM_MODULES; moduleIdx++){
+						if((onscreenBuffer->modulebuffer[moduleIdx][blockIndex] & (1 << (bitIndex))) != 0) {
+							gpio_set(PORT_DATA, PIN_DATA[moduleIdx]);
+						} else {
+							gpio_clear(PORT_DATA, PIN_DATA[moduleIdx]);
+						}
 					}
 				}
 
