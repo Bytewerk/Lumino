@@ -70,7 +70,7 @@ static void set_pixel_in_block(uint32_t *data, uint32_t x, uint32_t y, bool enab
 {
 	if(enable) {
 		//*data |= (1 << blockMapping[y][x]);
-		*data |= (1 << (31 - blockMapping[y][x]));
+		*data |= (1 << (31 - blockMapping[y][x]));	//TODO: do inversion in blockMapping array
 	} else {
 		//*data &= ~(1 << blockMapping[y][x]);
 		*data &= ~(1 << (31 - blockMapping[y][x]));
@@ -87,10 +87,16 @@ static void set_pixel_in_module(uint32_t *modulebuffer, uint32_t x, uint32_t y, 
 	set_pixel_in_block(&(modulebuffer[blockIdx]), x - (4 * blockX), y - (8 * blockY), enable);
 }
 
-static void set_pixel(struct framebuffer_t *framebuffer, uint32_t x, uint32_t y, bool enable){
+static void set_pixel(uint32_t x, uint32_t y, bool enable){
 	uint32_t moduleIdx = x/32;
 
-	set_pixel_in_module(framebuffer->modulebuffer[moduleIdx], x - (32*moduleIdx), y, enable);
+	set_pixel_in_module(offscreenBuffer->modulebuffer[moduleIdx], x - (32*moduleIdx), y, enable);
+}
+
+static void flipBuffers(void){
+	struct framebuffer_t *swp = onscreenBuffer;
+	onscreenBuffer = offscreenBuffer;
+	offscreenBuffer = swp;
 }
 
 static void update_modulebuffer(void)
@@ -185,7 +191,7 @@ static void init_timer(void)
 	// GO!
 	TIM1_CR1 |= TIM_CR1_CEN;
 
-	// *** TIM4 ***
+	// *** TIM4 *** //TODO: is this TIM4 stuff necessary?
 	timer_reset(TIM4);
 	timer_set_mode(TIM4, TIM_CR1_CKD_CK_INT, TIM_CR1_CMS_EDGE, TIM_CR1_DIR_UP);
 
