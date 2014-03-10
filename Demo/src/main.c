@@ -54,13 +54,11 @@ const uint32_t blockMapping[8][4] = {
 	{16, 20, 13, 15}
 };
 
-struct framebuffer_t{
-	uint32_t modulebuffer[NUM_MODULES][MODULEBUFFER_SIZE];
-};
+typedef uint32_t framebuffer_t[NUM_MODULES][MODULEBUFFER_SIZE];
 
-struct framebuffer_t framebuffer1, framebuffer2;
-struct framebuffer_t *onscreenBuffer	= &framebuffer1;
-struct framebuffer_t *offscreenBuffer	= &framebuffer2;
+framebuffer_t framebuffer1, framebuffer2;
+framebuffer_t *onscreenBuffer	= &framebuffer1;
+framebuffer_t *offscreenBuffer	= &framebuffer2;
 
 #define SEND_FRAMEBUFFER (1 << 0)
 
@@ -90,11 +88,19 @@ static void set_pixel_in_module(uint32_t *modulebuffer, uint32_t x, uint32_t y, 
 static void set_pixel(uint32_t x, uint32_t y, bool enable){
 	uint32_t moduleIdx = x/32;
 
-	set_pixel_in_module(offscreenBuffer->modulebuffer[moduleIdx], x - (32*moduleIdx), y, enable);
+	set_pixel_in_module((*offscreenBuffer)[moduleIdx], x - (32*moduleIdx), y, enable);
 }
 
-static void flipBuffers(void){
-	struct framebuffer_t *swp = onscreenBuffer;
+static void clear_buffer(void){
+	for(int i=0; i<NUM_MODULES; i++){
+		for(int j=0; j<MODULEBUFFER_SIZE; j++){
+			(*offscreenBuffer)[i][j] = 0;
+		}
+	}
+}
+
+static void flip_buffers(void){
+	framebuffer_t *swp = onscreenBuffer;
 	onscreenBuffer = offscreenBuffer;
 	offscreenBuffer = swp;
 }
@@ -275,7 +281,7 @@ void tim1_up_tim10_isr(void)
 				// update data pin
 				if(bitIndex < 32) {
 					for(int moduleIdx = 0; moduleIdx < NUM_MODULES; moduleIdx++){
-						if((onscreenBuffer->modulebuffer[moduleIdx][blockIndex] & (1 << (bitIndex))) != 0) {
+						if(((*onscreenBuffer)[moduleIdx][blockIndex] & (1 << (bitIndex))) != 0) {
 							gpio_set(PORT_DATA, PIN_DATA[moduleIdx]);
 						} else {
 							gpio_clear(PORT_DATA, PIN_DATA[moduleIdx]);
