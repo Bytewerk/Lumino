@@ -18,14 +18,14 @@
 #define PORT_DATA	 GPIOE
 #define PORT_LOAD	 GPIOE
 
-#define PIN_CLK		 GPIO7
-#define PIN_LOAD	 GPIO9
+#define PIN_CLK		 GPIO8
+#define PIN_LOAD	 GPIO7
 
-#define PIN_DATA_1	GPIO6
-#define PIN_DATA_2	GPIO7
-#define PIN_DATA_3	GPIO8
-#define PIN_DATA_4	GPIO9
-#define PIN_DATA_5	GPIO10
+#define PIN_DATA_1	GPIO9
+#define PIN_DATA_2	GPIO10
+#define PIN_DATA_3	GPIO11
+#define PIN_DATA_4	GPIO12
+#define PIN_DATA_5	GPIO13
 
 
 
