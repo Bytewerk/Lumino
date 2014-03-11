@@ -25,6 +25,7 @@
 #include <libopencm3/cm3/nvic.h>
 
 #include "uart.h"
+#include "led_disp.h"
 
 
 void uart_init(void)
@@ -65,10 +66,22 @@ void uart_init(void)
 }
 
 
+static void handle_data( uint8_t data, uint32_t *pos ){
+    uint32_t oldpos = *pos;
+    for( ; *pos-oldpos < 8; (*pos)++ ){
+        led_disp_set_pixel( *pos % NUM_MODULES*32+1, *pos / (NUM_MODULES*32), data & 0x80);
+        data <<= 1;
+    }
+}
 
-void uart4_isr(void)
+
+
+void uart4_isr( void )
 {
-	static uint8_t data = 'A';
+	uint8_t data = UART_ESC;
+    static bool esc = false;
+    static bool in_trans = false;
+    static uint32_t pos = 0;
 
 	/* Check if we were called because of RXNE. */
 	if (((USART_CR1(UART4) & USART_CR1_RXNEIE) != 0) &&
@@ -76,6 +89,55 @@ void uart4_isr(void)
 
 		/* Retrieve the data from the peripheral. */
 		data = usart_recv(UART4);
+
+        if( esc == true ){
+            esc = false;
+            switch( data ){
+                case UART_ESC:
+                    if( in_trans == true ){
+                        handle_data( data, &pos );
+                    }else{
+                        // error
+                    }
+                    break;
+
+                case UART_START:
+                    if( in_trans == false ){
+                        in_trans = true;
+                        pos = 0;
+                    }else{
+                        // error
+                    } 
+                    break;
+
+                case UART_STOP:
+                    if( in_trans == true ){
+                        in_trans = false;
+                        led_disp_flip_buffers();
+                    }else{
+                        // error
+                    }
+                    break;
+
+                default:
+                    // error
+                    break;
+            }
+        }else{
+            switch( data ){
+                case UART_ESC:
+                    esc = true;
+                    break;
+
+                default:
+                    if( in_trans == true ){
+                        handle_data( data, &pos );
+                    }else{
+                        // error
+                    }
+                    break;
+            }
+        }
 	}
 
 	/* Check if we were called because of TXE. */
