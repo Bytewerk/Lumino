@@ -157,9 +157,9 @@ void set_pixel_in_module(uint32_t *modulebuffer, uint32_t x, uint32_t y, bool en
 
 void led_disp_set_pixel(uint32_t x, uint32_t y, bool enable){
 	uint32_t moduleIdx = x/32;
-    y = 23-y;
-    x = x - (32*moduleIdx);
-    x = 31 - x;
+	y = 23-y;
+	x = x - (32*moduleIdx);
+	x = 31 - x;
 
 	set_pixel_in_module((*offscreenBuffer)[moduleIdx], x, y, enable);
 }

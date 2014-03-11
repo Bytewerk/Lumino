@@ -123,7 +123,7 @@ int main(void)
 	init_timer();
 
 	led_disp_init();
-    uart_init();
+	uart_init();
 
 	while (1) {
 		//if(!(led_disp_get_flag(SEND_FRAMEBUFFER))) {

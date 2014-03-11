@@ -79,76 +79,77 @@ static void handle_data( uint8_t data, uint32_t *pos ){
 void uart4_isr( void )
 {
 	uint8_t data = UART_ESC;
-    static bool esc = false;
-    static bool in_trans = false;
-    static uint32_t pos = 0;
+	static bool esc = false;
+	static bool in_trans = false;
+	static uint32_t pos = 0;
 
 	/* Check if we were called because of RXNE. */
 	if (((USART_CR1(UART4) & USART_CR1_RXNEIE) != 0) &&
-	    ((USART_SR(UART4) & USART_SR_RXNE) != 0)) {
+			((USART_SR(UART4) & USART_SR_RXNE) != 0)) {
 
 		/* Retrieve the data from the peripheral. */
 		data = usart_recv(UART4);
 
-        if( esc == true ){
-            esc = false;
-            switch( data ){
-                case UART_ESC:
-                    if( in_trans == true ){
-                        handle_data( data, &pos );
-                    }else{
-                        // error
-                    }
-                    break;
+		if( esc == true ){
+			esc = false;
+			switch( data ){
+				case UART_ESC:
+					if( in_trans == true ){
+						handle_data( data, &pos );
+					}else{
+						// error
+					}
+					break;
 
-                case UART_START:
-                    if( in_trans == false ){
-                        in_trans = true;
-                        pos = 0;
-                    }else{
-                        // error
-                    } 
-                    break;
+				case UART_START:
+					if( in_trans == false ){
+						in_trans = true;
+						pos = 0;
+					}else{
+						// error
+					} 
+					break;
 
-                case UART_STOP:
-                    if( in_trans == true ){
-                        in_trans = false;
-                        led_disp_flip_buffers();
-		                led_disp_set_flag(SEND_FRAMEBUFFER);
-                    }else{
-                        // error
-                    }
-                    break;
+				case UART_STOP:
+					if( in_trans == true ){
+						in_trans = false;
+						led_disp_flip_buffers();
+						led_disp_set_flag(SEND_FRAMEBUFFER);
+					}else{
+						// error
+					}
+					break;
 
-                default:
-                    // error
-                    break;
-            }
-        }else{
-            switch( data ){
-                case UART_ESC:
-                    esc = true;
-                    break;
+				default:
+					// error
+					break;
+			}
+		}else{ // esc == false
+			switch( data ){
+				case UART_ESC:
+					esc = true;
+					break;
 
-                default:
-                    if( in_trans == true ){
-                        handle_data( data, &pos );
-                    }else{
-                        // error
-                    }
-                    break;
-            }
-        }
+				default:
+					if( in_trans == true ){
+						handle_data( data, &pos );
+					}else{
+						// error
+						usart_enable_tx_interrupt(UART4);
+					}
+					break;
+			}
+		}
 	}
 
 	/* Check if we were called because of TXE. */
 	if (((USART_CR1(UART4) & USART_CR1_TXEIE) != 0) &&
-	    ((USART_SR(UART4) & USART_SR_TXE) != 0)) {
+			((USART_SR(UART4) & USART_SR_TXE) != 0)) {
 
 		///* Put data into the transmit register. */
-		//usart_send(USART2, data);
+		usart_send(UART4, data);
 
 		///* Disable the TXE interrupt as we don't need it anymore. */
-		//usart_disable_tx_interrupt(USART2);
+		usart_disable_tx_interrupt(UART4);
 	}
 }
