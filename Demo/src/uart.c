@@ -114,6 +114,7 @@ void uart4_isr( void )
                     if( in_trans == true ){
                         in_trans = false;
                         led_disp_flip_buffers();
+		                led_disp_set_flag(SEND_FRAMEBUFFER);
                     }else{
                         // error
                     }

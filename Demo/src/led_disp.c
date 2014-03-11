@@ -26,7 +26,7 @@
 #include "led_disp.h"
 
 const uint32_t PIN_DATA[NUM_MODULES] = {	// this is not very fancy but it'll do...
-	PIN_DATA_1,									// TODO: find free pins
+	PIN_DATA_1,
 	PIN_DATA_2,
 	PIN_DATA_3,
 	PIN_DATA_4,

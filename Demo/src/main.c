@@ -26,6 +26,7 @@
 #include <stdlib.h>
 
 #include "led_disp.h"
+#include "uart.h"
 
 
 
@@ -122,12 +123,13 @@ int main(void)
 	init_timer();
 
 	led_disp_init();
+    uart_init();
 
 	while (1) {
-		if(!(led_disp_get_flag(SEND_FRAMEBUFFER))) {
-			update_modulebuffer();
-			led_disp_set_flag(SEND_FRAMEBUFFER);
-		}
+		//if(!(led_disp_get_flag(SEND_FRAMEBUFFER))) {
+		//	update_modulebuffer();
+		//	led_disp_set_flag(SEND_FRAMEBUFFER);
+		//}
 	}
 
 	return 0;
