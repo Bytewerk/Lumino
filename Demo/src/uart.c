@@ -51,7 +51,7 @@ void uart_init(void)
 	gpio_set_af(GPIOA, GPIO_AF8, GPIO1);
 
 	/* Setup USART4 parameters. */
-	usart_set_baudrate(UART4, 38400);
+	usart_set_baudrate(UART4, UART_BAUDRATE);
 	usart_set_databits(UART4, 8);
 	usart_set_stopbits(UART4, USART_STOPBITS_1);
 	usart_set_mode(UART4, USART_MODE_TX_RX);

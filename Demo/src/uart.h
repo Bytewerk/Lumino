@@ -4,6 +4,13 @@
 
 
 // // // // // // // // // // 
+// UART CONSTANTS
+// // // // // // // // // // 
+#define UART_BAUDRATE 115200
+
+
+
+// // // // // // // // // // 
 // SPECIAL CHARACTERS
 // // // // // // // // // // 
 #define UART_ESC 0x1B
