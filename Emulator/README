@@ -1,0 +1,2 @@
+Ein Emulator, der das UART-Protokoll auf STDIN liest und auf einem per SDL
+emulierten Display anzeigt.
