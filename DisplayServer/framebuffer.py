@@ -24,9 +24,18 @@ class FrameBuffer:
 			else:
 				self._data[i] = 0x00
 
+	def updateFromString(self, s):
+		if len(s) >= DATA_SIZE:
+			self._data = [ord(s[i]) for i in range(DATA_SIZE)]
+		else:
+			raise IndexError()
+
 	def serialize(self):
 		s = "\x1b\x02"
 		for byte in self._data:
+			if byte == 0x1B:
+				# this is the escape byte, which must be repeated in data
+				s += chr(byte)
 			s += chr(byte)
 
 		s += "\x1b\x03"

@@ -6,22 +6,23 @@ import codecs
 import time
 import sys
 import math
+import base64
 
 import SocketServer
 
 from framebuffer import *
 
-framebuffer = FrameBuffer()
+fb = FrameBuffer()
 
 def commit_screen():
-	print(framebuffer.serialize())
+	print(fb.serialize())
 	sys.stdout.flush()
 
 def run_demo(cmdparts):
 	t = 0
 	while t < 240:
 		# update the framebuffer
-		framebuffer.clear()
+		fb.clear()
 
 		for x in range(DISPLAY_WIDTH / 16):
 			for y in range(DISPLAY_HEIGHT):
@@ -30,10 +31,10 @@ def run_demo(cmdparts):
 					mx = (16*x + t) % DISPLAY_WIDTH
 				else:
 					mx = (16*x - t) % DISPLAY_WIDTH
-				framebuffer.setPixel(mx, y, True)
+				fb.setPixel(mx, y, True)
 
 		for x in range(DISPLAY_WIDTH):
-			framebuffer.setPixel(x, int(11.5 * (1+math.sin(2*math.pi * 10 * float(t)/DISPLAY_WIDTH) * math.sin(2*math.pi * 2 * (float(x)/DISPLAY_WIDTH)))), True)
+			fb.setPixel(x, int(11.5 * (1+math.sin(2*math.pi * 10 * float(t)/DISPLAY_WIDTH) * math.sin(2*math.pi * 2 * (float(x)/DISPLAY_WIDTH)))), True)
 
 		# send the framebuffer
 		commit_screen()
@@ -57,7 +58,7 @@ def run_setpixel(cmdparts):
 	if x < 0 or y < 0 or x >= DISPLAY_WIDTH or y >= DISPLAY_HEIGHT:
 		return False
 
-	framebuffer.setPixel(x, y, enable)
+	fb.setPixel(x, y, enable)
 
 	return True
 
@@ -72,13 +73,26 @@ def run_clear(cmdparts):
 	else:
 		return False
 
-	framebuffer.clear(clr)
+	fb.clear(clr)
 
 	return True
 
 def run_commit(cmdparts):
 	commit_screen()
 	return True
+
+def run_setfb(cmdparts):
+	# setpixel needs 1 param: Base64 encoded framebuffer data
+	if len(cmdparts) != 2:
+		return False
+
+	s = base64.b64decode(cmdparts[1]);
+
+	try:
+		fb.updateFromString(s)
+		return True
+	except Exception:
+		return False
 
 class MyTCPHandler(SocketServer.StreamRequestHandler):
 	def handle(self):
@@ -89,27 +103,29 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
 
 			print("Received: [%d] %s" % (len(cmdparts), cmd), file=sys.stderr)
 
-			try:
-				cmdHandler = None
+			#try:
+			cmdHandler = None
 
-				if cmdparts[0] == "demo":
-					cmdHandler = run_demo
-				elif cmdparts[0] == "setpixel":
-					cmdHandler = run_setpixel
-				elif cmdparts[0] == "commit":
-					cmdHandler = run_commit
-				elif cmdparts[0] == "clear":
-					cmdHandler = run_clear
+			if cmdparts[0] == "demo":
+				cmdHandler = run_demo
+			elif cmdparts[0] == "setpixel":
+				cmdHandler = run_setpixel
+			elif cmdparts[0] == "commit":
+				cmdHandler = run_commit
+			elif cmdparts[0] == "clear":
+				cmdHandler = run_clear
+			elif cmdparts[0] == "setfb":
+				cmdHandler = run_setfb
 
-				if cmdHandler:
-					if cmdHandler(cmdparts):
-						self.request.sendall("200 OK\n")
-					else:
-						self.request.sendall("405 Invalid request\n")
+			if cmdHandler:
+				if cmdHandler(cmdparts):
+					self.request.sendall("200 OK\n")
 				else:
-					self.request.sendall("400 Unknown command\n")
-			except Exception:
-				self.request.sendall("500 Fail\n")
+					self.request.sendall("405 Invalid request\n")
+			else:
+				self.request.sendall("400 Unknown command\n")
+			#except Exception:
+			#	self.request.sendall("500 Fail\n")
 
 if __name__ == "__main__":
 	HOST, PORT = "localhost", 12345
