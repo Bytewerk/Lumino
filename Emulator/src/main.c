@@ -34,7 +34,7 @@ int main(void)
 
 		retval = select(1, &rfds, NULL, NULL, &tv);
 
-		if(retval) { // data available
+		if(retval && FD_ISSET(0, &rfds)) { // data available
 			read(0, &c, 1);
 
 			if( (ptr = uart_decode(c)) ) {
