@@ -11,6 +11,7 @@ import base64
 import SocketServer
 
 from framebuffer import *
+from bitmap import *
 
 fb = FrameBuffer()
 
@@ -54,13 +55,7 @@ def run_setpixel(cmdparts):
 	y = int(cmdparts[2])
 	enable = int(cmdparts[3]) != 0
 
-	# range check
-	if x < 0 or y < 0 or x >= DISPLAY_WIDTH or y >= DISPLAY_HEIGHT:
-		return False
-
-	fb.setPixel(x, y, enable)
-
-	return True
+	return fb.setPixel(x, y, enable)
 
 def run_clear(cmdparts):
 	# setpixel needs 0 or 1 params:
@@ -94,6 +89,24 @@ def run_setfb(cmdparts):
 	except Exception:
 		return False
 
+def run_drawbitmap(cmdparts):
+	# setpixel needs 5 params: x, y, width, height, data (Base64-encoded)
+	if len(cmdparts) != 6:
+		return False
+
+	x = int(cmdparts[1])
+	y = int(cmdparts[2])
+	w = int(cmdparts[3])
+	h = int(cmdparts[4])
+
+	# 8x7-bitmap example data
+	#data = "\x18\x24\x42\xA5\x81\x66\x3C\x18"
+	data = base64.b64decode(cmdparts[5]);
+
+	bmp = Bitmap(w, h, data)
+	fb.drawBitmap(x, y, bmp)
+	return True
+
 class MyTCPHandler(SocketServer.StreamRequestHandler):
 	def handle(self):
 		# receive the data from the client
@@ -116,6 +129,8 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
 				cmdHandler = run_clear
 			elif cmdparts[0] == "setfb":
 				cmdHandler = run_setfb
+			elif cmdparts[0] == "drawbitmap":
+				cmdHandler = run_drawbitmap
 
 			if cmdHandler:
 				if cmdHandler(cmdparts):

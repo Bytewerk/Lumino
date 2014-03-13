@@ -8,6 +8,10 @@ class FrameBuffer:
 		self._data = [0 for i in range(DATA_SIZE)]
 
 	def setPixel(self, x, y, on):
+		# range check
+		if x < 0 or y < 0 or x >= DISPLAY_WIDTH or y >= DISPLAY_HEIGHT:
+			return False
+
 		bit  = (y * DISPLAY_WIDTH + x)
 		byte = bit / 8
 		bit %= 8
@@ -16,6 +20,8 @@ class FrameBuffer:
 			self._data[byte] |= (0x80 >> bit);
 		else:
 			self._data[byte] &= ~(0x80 >> bit);
+
+		return True
 
 	def clear(self, on = False):
 		for i in range(DATA_SIZE):
@@ -29,6 +35,11 @@ class FrameBuffer:
 			self._data = [ord(s[i]) for i in range(DATA_SIZE)]
 		else:
 			raise IndexError()
+
+	def drawBitmap(self, x, y, bitmap):
+		for dx in range(bitmap.width):
+			for dy in range(bitmap.height):
+				self.setPixel(x+dx, y+dy, bitmap.isOn(dx, dy))
 
 	def serialize(self):
 		s = "\x1b\x02"
