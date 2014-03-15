@@ -8,6 +8,8 @@ import sys
 import math
 import base64
 
+import threading
+
 import SocketServer
 
 from framebuffer import *
@@ -15,7 +17,19 @@ from bitmap import *
 from font import *
 
 fb = FrameBuffer()
-font = Font(10)
+fbsema = threading.Semaphore(1)
+
+class ScrollingThread(threading.Thread):
+	def run(self):
+		while True:
+			fbsema.acquire()
+			fb.shiftText()
+			fb.redrawText()
+			commit_screen()
+			fbsema.release()
+
+			time.sleep(0.10)
+
 
 def commit_screen():
 	print(fb.serialize())
@@ -123,45 +137,96 @@ def run_drawtext(cmdparts):
 	fb.drawBitmap(x, y, bmp)
 	return True
 
+def run_settext(cmdparts):
+	# settext needs 2 params: line, text
+	if len(cmdparts) < 3:
+		return False
+
+	line = int(cmdparts[1])
+
+	s = " ".join(cmdparts[2:])
+
+	fb.setText(line, s)
+	return True
+
+def run_settextarea(cmdparts):
+	# settext needs 4 params: x, y, w, h
+	if len(cmdparts) != 5:
+		return False
+
+	x = int(cmdparts[1])
+	y = int(cmdparts[2])
+	w = int(cmdparts[3])
+	h = int(cmdparts[4])
+
+	fb.setTextArea(x, y, w, h)
+	return True
+
+def run_cleartextarea(cmdparts):
+	# settext needs no params
+	if len(cmdparts) != 1:
+		return False
+
+	fb.clearTextArea(x, y, w, h)
+	return True
+
 class MyTCPHandler(SocketServer.StreamRequestHandler):
 	def handle(self):
 		# receive the data from the client
 		for cmd in self.rfile:
 			cmd = cmd.strip().decode('utf8')
-			cmdparts = cmd.split(' ')
+			cmdparts = cmd.split(u' ')
 
-			print("Received: [%d, %s] %s" % (len(cmdparts), type(cmd), cmd), file=sys.stderr)
+			#print("Received: [%d, %s] %s" % (len(cmdparts), type(cmd), cmd), file=sys.stderr)
 
-			#try:
-			cmdHandler = None
+			try:
+				cmdHandler = None
 
-			if cmdparts[0] == "demo":
-				cmdHandler = run_demo
-			elif cmdparts[0] == "setpixel":
-				cmdHandler = run_setpixel
-			elif cmdparts[0] == "commit":
-				cmdHandler = run_commit
-			elif cmdparts[0] == "clear":
-				cmdHandler = run_clear
-			elif cmdparts[0] == "setfb":
-				cmdHandler = run_setfb
-			elif cmdparts[0] == "drawbitmap":
-				cmdHandler = run_drawbitmap
-			elif cmdparts[0] == "drawtext":
-				cmdHandler = run_drawtext
+				if cmdparts[0] == "demo":
+					cmdHandler = run_demo
+				elif cmdparts[0] == "setpixel":
+					cmdHandler = run_setpixel
+				elif cmdparts[0] == "commit":
+					cmdHandler = run_commit
+				elif cmdparts[0] == "clear":
+					cmdHandler = run_clear
+				elif cmdparts[0] == "setfb":
+					cmdHandler = run_setfb
+				elif cmdparts[0] == "drawbitmap":
+					cmdHandler = run_drawbitmap
+				elif cmdparts[0] == "drawtext":
+					cmdHandler = run_drawtext
+				elif cmdparts[0] == "settext":
+					cmdHandler = run_settext
+				elif cmdparts[0] == "settextarea":
+					cmdHandler = run_settextarea
+				elif cmdparts[0] == "cleartextarea":
+					cmdHandler = run_cleartextarea
 
-			if cmdHandler:
-				if cmdHandler(cmdparts):
-					self.request.sendall("200 OK\n")
+				if cmdHandler:
+					fbsema.acquire()
+					result = cmdHandler(cmdparts)
+					fbsema.release()
+
+					if result:
+						self.request.sendall("200 OK\n")
+					else:
+						self.request.sendall("405 Invalid request\n")
 				else:
-					self.request.sendall("405 Invalid request\n")
-			else:
-				self.request.sendall("400 Unknown command\n")
-			#except Exception:
-			#	self.request.sendall("500 Fail\n")
+					self.request.sendall("400 Unknown command\n")
+			except Exception:
+				self.request.sendall("500 Fail\n")
 
 if __name__ == "__main__":
 	HOST, PORT = "", 12345
+
+	fb.clear(0)
+	#fb.setTextArea(20, 1, 5*32-20, 21)
+	#fb.setText(0, "Hello")
+	#fb.setText(1, "bytewerk!!!!11!1!!!einundelfzig11111!!1!")
+	#run_demo([''])
+
+	ScrollingThread().start()
 
 	# Create the server
 	server = SocketServer.TCPServer((HOST, PORT), MyTCPHandler)

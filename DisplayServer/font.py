@@ -5,7 +5,7 @@ from bitmap import Bitmap
 class Font:
 	def __init__(self, fontsize):
 		self._fontsize = fontsize
-		self._font = ImageFont.truetype("/usr/share/fonts/dejavu/DejaVuSansMono.ttf", fontsize)
+		self._font = ImageFont.truetype("/usr/share/fonts/dejavu/DejaVuSans.ttf", fontsize)
 
 	# create a Bitmap object from a string
 	def getBitmap(self, s):
@@ -17,10 +17,19 @@ class Font:
 		draw = ImageDraw.Draw(image)
 		draw = draw.text((0,0), s, 1, font=self._font)
 
-		tmpdata = [0 for i in range(w*h+1)]
+		# determine the actually needed width for this bitmap
+		maxw = 0
 		for x in range(w):
 			for y in range(h):
-				bit  = (y * w + x)
+				if image.getpixel( (x, y) ) and x > maxw:
+					maxw = x
+
+		maxw += 2
+
+		tmpdata = [0 for i in range(maxw*h+1)]
+		for x in range(maxw):
+			for y in range(h):
+				bit  = (y * maxw + x)
 				byte = bit / 8
 				bit %= 8
 
@@ -29,4 +38,4 @@ class Font:
 
 		data = [chr(c) for c in tmpdata]
 
-		return Bitmap(w, h, data)
+		return Bitmap(maxw, h, data)
