@@ -12,8 +12,10 @@ import SocketServer
 
 from framebuffer import *
 from bitmap import *
+from font import *
 
 fb = FrameBuffer()
+font = Font(24)
 
 def commit_screen():
 	print(fb.serialize())
@@ -90,7 +92,7 @@ def run_setfb(cmdparts):
 		return False
 
 def run_drawbitmap(cmdparts):
-	# setpixel needs 5 params: x, y, width, height, data (Base64-encoded)
+	# drawbitmap needs 5 params: x, y, width, height, data (Base64-encoded)
 	if len(cmdparts) != 6:
 		return False
 
@@ -107,14 +109,28 @@ def run_drawbitmap(cmdparts):
 	fb.drawBitmap(x, y, bmp)
 	return True
 
+def run_drawtext(cmdparts):
+	# drawtext needs 3 params: x, y, text
+	if len(cmdparts) < 4:
+		return False
+
+	x = int(cmdparts[1])
+	y = int(cmdparts[2])
+
+	s = " ".join(cmdparts[3:])
+
+	bmp = font.getBitmap(s)
+	fb.drawBitmap(x, y, bmp)
+	return True
+
 class MyTCPHandler(SocketServer.StreamRequestHandler):
 	def handle(self):
 		# receive the data from the client
 		for cmd in self.rfile:
-			cmd = cmd.strip()
+			cmd = cmd.strip().decode('utf8')
 			cmdparts = cmd.split(' ')
 
-			print("Received: [%d] %s" % (len(cmdparts), cmd), file=sys.stderr)
+			print("Received: [%d, %s] %s" % (len(cmdparts), type(cmd), cmd), file=sys.stderr)
 
 			#try:
 			cmdHandler = None
@@ -131,6 +147,8 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
 				cmdHandler = run_setfb
 			elif cmdparts[0] == "drawbitmap":
 				cmdHandler = run_drawbitmap
+			elif cmdparts[0] == "drawtext":
+				cmdHandler = run_drawtext
 
 			if cmdHandler:
 				if cmdHandler(cmdparts):
