@@ -42,7 +42,7 @@ def run_demo(cmdparts):
 		# send the framebuffer
 		commit_screen()
 
-		time.sleep(1.0/24)
+		time.sleep(0.01)
 
 		t += 1
 
@@ -161,7 +161,7 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
 			#	self.request.sendall("500 Fail\n")
 
 if __name__ == "__main__":
-	HOST, PORT = "localhost", 12345
+	HOST, PORT = "", 12345
 
 	# Create the server
 	server = SocketServer.TCPServer((HOST, PORT), MyTCPHandler)
