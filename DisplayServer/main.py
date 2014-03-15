@@ -15,7 +15,7 @@ from bitmap import *
 from font import *
 
 fb = FrameBuffer()
-font = Font(24)
+font = Font(10)
 
 def commit_screen():
 	print(fb.serialize())
