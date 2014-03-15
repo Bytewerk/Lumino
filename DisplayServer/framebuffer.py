@@ -64,6 +64,7 @@ class FrameBuffer:
 		if self._texts[line] != s:
 			self._textBmps[line] = self._font.getBitmap(s)
 			self._texts[line] = s
+			self._textOffsets[line] = OVERSCROLL
 
 	def redrawText(self):
 		# do not render anything if textarea is clear
@@ -77,21 +78,20 @@ class FrameBuffer:
 				continue
 
 			if self._textOffsets[line] >= 0:
-				sx = self._textarea.x
+				sx = 0
 			elif self._textOffsets[line] < (self._textarea.w - self._textBmps[line].width):
-				sx = self._textarea.x + self._textarea.w - self._textBmps[line].width
+				sx = self._textarea.w - self._textBmps[line].width
 			else:
-				sx = self._textarea.x + self._textOffsets[line]
+				sx = self._textOffsets[line]
 
 			sy = self._textarea.y + bmp.height * line
 
-			for dx in range(bmp.width):
-				for dy in range(bmp.height):
-					x = sx+dx
+			for dx in range(self._textarea.w):
+				for dy in range(self._textarea.h):
+					x = self._textarea.x+dx
 					y = sy+dy
 
-					if self._textarea.isInside(x, y):
-						self.setPixel(x, y, bmp.isOn(dx, dy))
+					self.setPixel(x, y, bmp.isOn(dx-sx, dy))
 
 	def shiftText(self):
 		for line in range(2):

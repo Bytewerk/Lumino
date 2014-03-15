@@ -17,6 +17,9 @@ class Bitmap:
 
 	
 	def isOn(self, x, y):
+		if x < 0 or y < 0 or x >= self.width or y >= self.height:
+			return 0
+
 		bit  = (y * self.width + x)
 		byte = bit / 8
 		bit %= 8
