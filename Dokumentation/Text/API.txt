@@ -1,0 +1,52 @@
+DisplayServer TCP API
+=====================
+
+Koordinaten
+-----------
+
+(0,0) ist links oben am Display. X wird nach rechts größer, Y nach unten. Alle
+Koordinaten beziehen sich auf Pixel.
+
+Befehle
+-------
+
+Im Folgenden sind <argumente> Pflicht und [argumente] optional.
+
+- setpixel <x> <y> <enable>
+	- Wenn enable != 0, wird die LED an Position (x,y) eingeschaltet, ansonsten
+		ausgeschaltet.
+
+- clear [enable]
+	- Überschreibe alle Pixel des Displays mit dem Wert von enable. Wenn enable
+		nicht angegeben ist, wird 0 angenommen.
+
+- commit
+	- Übernehme alle bisherigen Änderungen auf das tatsächliche Display.
+
+- setfb <base64-data>
+	- Setze den gesamten Framebuffer aus den Base64-kodierten Daten in
+		base64-data. Die Displaydaten enthalten 1 bit/LED. Die Daten werden
+		zeilenweise übertragen, wobei die erste LED durch das MSB gesetzt wird.
+
+- drawbitmap <x> <y> <w> <h> <base64-data>
+	- Zeichne an Position (x,y) ein Bild mit Höhe h und Breite w. Die Daten
+		werden wie beim setfb-Befehl in base64-data kodiert.
+
+- drawtext <x> <y> <text>
+	- Zeichne den Text <text> an Position (x,y). <text> kann auch Leerzeichen
+		enthalten.
+
+- settext <line> <text>
+	- Setze Zeile line im vordefinierten Textbereich auf <text>. Zeilen werden
+		ab 0 gezählt. <text> kann Leerzeichen enthalten.
+
+- settextarea <x> <y> <w> <h>
+	- Setze den vordefinierten Textbereich an Position (x,y) mit Breite w und
+		Höhe h.
+
+- cleartextarea
+	- Lösche den vordefinierten Textbereich. Dies macht das Display wieder
+		vollständig für eigene Zeichnungen nutzbar.
+
+- demo
+	- Eine vordefinierte Animation zum Testen des Displays
