@@ -51,10 +51,11 @@ while True:
 					playedtime = float(parts[0])
 					fulltime = float(parts[1])
 
-					width = int(160 * playedtime / fulltime)
-
 					displaysocket.sendall("clear\n")
-					displaysocket.sendall("drawbitmap 0 22 %d 2 %s\n" % (width, progressbuffer))
+					if fulltime != 0:
+						width = int(160 * playedtime / fulltime)
+
+						displaysocket.sendall("drawbitmap 0 22 %d 2 %s\n" % (width, progressbuffer))
 
 			if status['state'] == "stop":
 				displaysocket.sendall("drawbitmap 0 2 16 15 %s\n" % stopsymbol)
