@@ -167,7 +167,7 @@ def run_cleartextarea(cmdparts):
 	if len(cmdparts) != 1:
 		return False
 
-	fb.clearTextArea(x, y, w, h)
+	fb.clearTextArea()
 	return True
 
 class MyTCPHandler(SocketServer.StreamRequestHandler):

@@ -84,14 +84,15 @@ class FrameBuffer:
 			else:
 				sx = self._textOffsets[line]
 
-			sy = self._textarea.y + bmp.height * line
-
 			for dx in range(self._textarea.w):
-				for dy in range(self._textarea.h):
-					x = self._textarea.x+dx
-					y = sy+dy
+				for dy in range(bmp.height*line, bmp.height*(line+1)):
+					if dy > self._textarea.h:
+						continue
 
-					self.setPixel(x, y, bmp.isOn(dx-sx, dy))
+					x = self._textarea.x+dx
+					y = self._textarea.y+dy
+
+					self.setPixel(x, y, bmp.isOn(dx-sx, dy-(bmp.height * line)))
 
 	def shiftText(self):
 		for line in range(2):
