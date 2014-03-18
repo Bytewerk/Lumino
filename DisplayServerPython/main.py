@@ -179,7 +179,8 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
 
 			#print("Received: [%d, %s] %s" % (len(cmdparts), type(cmd), cmd), file=sys.stderr)
 
-			try:
+			#try:
+			if True:
 				cmdHandler = None
 
 				if cmdparts[0] == "demo":
@@ -214,8 +215,8 @@ class MyTCPHandler(SocketServer.StreamRequestHandler):
 						self.request.sendall("405 Invalid request\n")
 				else:
 					self.request.sendall("400 Unknown command\n")
-			except Exception:
-				self.request.sendall("500 Fail\n")
+			#except Exception:
+			#	self.request.sendall("500 Fail\n")
 
 if __name__ == "__main__":
 	HOST, PORT = "", 12345
