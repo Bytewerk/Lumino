@@ -226,7 +226,9 @@ if __name__ == "__main__":
 	#fb.setText(1, "bytewerk!!!!11!1!!!einundelfzig11111!!1!")
 	#run_demo([''])
 
-	ScrollingThread().start()
+	st = ScrollingThread()
+	st.daemon = True
+	st.start()
 
 	# Create the server
 	server = SocketServer.TCPServer((HOST, PORT), MyTCPHandler)
