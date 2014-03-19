@@ -42,6 +42,7 @@ void Font::renderText(const std::wstring &text, Bitmap *bitmap)
 
 	// create a temporary bitmap with sufficient size for the whole text
 	Bitmap tmpBitmap(m_size * text.length(), 3 * m_size / 2);
+	tmpBitmap.clear(false);
 
 	for(std::string::size_type i = 0; i < text.length(); i++) {
 		c = text[i];

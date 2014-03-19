@@ -16,7 +16,7 @@ Bitmap::~Bitmap()
 
 void Bitmap::resizeData(void)
 {
-	m_data.resize(m_width * m_height / 8);
+	m_data.resize(m_width * m_height / 8 + 1);
 }
 
 void Bitmap::setSize(unsigned width, unsigned height)

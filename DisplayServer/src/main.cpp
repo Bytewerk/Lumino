@@ -1,8 +1,13 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#include <math.h>
+
 #include <iostream>
 #include <string>
+#include <sstream>
+
+#include <ctime>
 
 #include "Font.h"
 #include "Logger.h"
@@ -12,6 +17,54 @@
 #include "strutil.h"
 
 using namespace std;
+
+void demo(FT_Library *ftlib) {
+	Framebuffer fb;
+	string serialData;
+	Font demoFont(ftlib, "/usr/share/fonts/dejavu/DejaVuSans.ttf", 10);
+
+	unsigned frameIndex = 0;
+
+	while(true) {
+		fb.clear(false);
+
+		for(unsigned x = 0; x < Framebuffer::WIDTH/16; x++) {
+			for(unsigned y = 0; y < Framebuffer::HEIGHT; y++) {
+				bool even = ((y % 2) == 0);
+				unsigned mx;
+
+				if(even) {
+					mx = (16*x + frameIndex) % Framebuffer::WIDTH;
+				} else {
+					// the added (16 << 24) is necessary, as C(++) doesn’t support modulo
+					// on negative numbers
+					mx = (16*x + (16 << 24) - frameIndex) % Framebuffer::WIDTH;
+				}
+
+				fb.setPixel(mx, y, true);
+			}
+		}
+
+		wostringstream oss;
+		oss << L"?¿? D€MØ " << frameIndex << L" D€MØ !¡!";
+
+		Bitmap textBitmap(0, 0);
+		textBitmap.clear(false);
+		demoFont.renderText(oss.str(), &textBitmap);
+
+		unsigned x = 80 - textBitmap.getWidth()/2  + 8 * cos(2 * M_PI * frameIndex / 100);
+		unsigned y = 12 - textBitmap.getHeight()/2 + 8 * sin(2 * M_PI * frameIndex / 100);
+		fb.blit(textBitmap, x, y);
+
+		fb.serialize(&serialData);
+		cout << serialData << flush;
+
+		frameIndex++;
+
+		//struct timespec ts = {0, 10 * 1000000};
+		//nanosleep(&ts, NULL);
+	}
+}
 
 int main(void)
 {
@@ -41,4 +94,6 @@ int main(void)
 	std::string serialData;
 	fb.serialize(&serialData);
 	cout << serialData;
+
+	demo(&ftlib);
 }
