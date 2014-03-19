@@ -17,7 +17,7 @@ class Font {
 		Font(FT_Library *ftlib, const char *filename, unsigned size);
 		~Font();
 
-		void renderText(const std::string &text, Bitmap *bitmap);
+		void renderText(const std::wstring &text, Bitmap *bitmap);
 };
 
 #endif // FONT_H

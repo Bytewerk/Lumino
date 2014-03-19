@@ -23,14 +23,14 @@ class Bitmap {
 		bool setPixel(unsigned x, unsigned y, bool enable)
 		{
 			if(x < m_width && y < m_height) {
-				unsigned bit = (y * m_width + m_height);
+				unsigned bit = (y * m_width + x);
 				unsigned byte = bit / 8;
 				bit %= 8;
 
 				if(enable) {
-					m_data[byte] |= (1 << bit);
+					m_data[byte] |= (0x80 >> bit);
 				} else {
-					m_data[byte] &= ~(1 << bit);
+					m_data[byte] &= ~(0x80 >> bit);
 				}
 
 				return true;
@@ -42,15 +42,17 @@ class Bitmap {
 		bool getPixel(unsigned x, unsigned y)
 		{
 			if(x < m_width && y < m_height) {
-				unsigned bit = (y * m_width + m_height);
+				unsigned bit = (y * m_width + x);
 				unsigned byte = bit / 8;
 				bit %= 8;
 
-				return (m_data[byte] & (1 << bit)) != 0;
+				return (m_data[byte] & (0x80 >> bit)) != 0;
 			} else {
 				return false;
 			}
 		}
+
+		void debugPrint(void);
 };
 
 #endif // BITMAP_H

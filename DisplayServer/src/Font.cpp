@@ -34,34 +34,46 @@ Font::~Font()
 {
 }
 
-void Font::renderText(const std::string &text, Bitmap *bitmap)
+void Font::renderText(const std::wstring &text, Bitmap *bitmap)
 {
 	int fterror;
+	int pen_x = 0, pen_y = 10;
+	wchar_t c;
+	FT_UInt glyphIndex;
 
-	fterror = FT_Load_Glyph(m_face, 0x65 /*e*/, FT_LOAD_DEFAULT);
-	if(fterror) {
-		throw FreeTypeException("Font", "Could not load glyph", fterror);
-	}
+	// create a temporary bitmap with sufficient size for the whole text
+	Bitmap tmpBitmap(m_size * text.length(), 3 * m_size / 2);
 
-	fterror = FT_Render_Glyph(m_face->glyph, FT_RENDER_MODE_MONO);
-	if(fterror) {
-		throw FreeTypeException("Font", "Could not render the glyph", fterror);
-	}
+	for(std::string::size_type i = 0; i < text.length(); i++) {
+		c = text[i];
 
-	FT_Bitmap ftbmp = m_face->glyph->bitmap;
-
-	LOG(Logger::LVL_DEBUG, "Font", "Bitmap size: %ix%i", ftbmp.width, ftbmp.rows);
-
-	for(int y = 0; y < ftbmp.rows; y++) {
-		for(int x = 0; x < ftbmp.width; x++) {
-			unsigned char *row = ftbmp.buffer + y*ftbmp.pitch;
-
-			unsigned byte = x / 8;
-			unsigned bit  = x % 8;
-
-			cout << ((row[byte] & (0x80 >> bit)) ? '#' : '-');
+		fterror = FT_Load_Char(m_face, c, FT_LOAD_RENDER | FT_LOAD_MONOCHROME);
+		if(fterror) {
+			throw FreeTypeException("Font", "Could not and render the glyph", fterror);
 		}
 
-		cout << endl;
+		FT_Bitmap ftbmp = m_face->glyph->bitmap;
+
+		// copy rendered glyph to position
+		for(int y = 0; y < ftbmp.rows; y++) {
+			for(int x = 0; x < ftbmp.width; x++) {
+				unsigned char *row = ftbmp.buffer + y*ftbmp.pitch;
+
+				unsigned byte = x / 8;
+				unsigned bit  = x % 8;
+
+				bool enable = (row[byte] & (0x80 >> bit)) != 0;
+
+				unsigned outx = pen_x + m_face->glyph->bitmap_left + x;
+				unsigned outy = pen_y - m_face->glyph->bitmap_top + y;
+
+				tmpBitmap.setPixel(outx, outy, enable);
+			}
+		}
+
+		pen_x += m_face->glyph->advance.x >> 6;
+		pen_y += m_face->glyph->advance.y >> 6;
 	}
+
+	tmpBitmap.debugPrint();
 }
