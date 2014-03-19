@@ -37,13 +37,37 @@ void Bitmap::debugPrint(void) const
 	}
 }
 
-void Bitmap::copyRectFromBitmap(const Bitmap &src, unsigned x, unsigned y, unsigned w, unsigned h)
+void Bitmap::extractRectFromBitmap(const Bitmap &src, unsigned x, unsigned y, unsigned w, unsigned h)
 {
 	this->setSize(w, h);
 
 	for(unsigned px = 0; px < w; px++) {
 		for(unsigned py = 0; py < h; py++) {
 			this->setPixel(px, py, src.getPixel(x+px, y+py));
+		}
+	}
+}
+
+void Bitmap::clear(bool enable)
+{
+	uint8_t c;
+
+	if(enable) {
+		c = 0xFF;
+	} else {
+		c = 0x00;
+	}
+
+	for(BitmapData::size_type i = 0; i < m_data.size(); i++) {
+		m_data[i] = c;
+	}
+}
+
+void Bitmap::blit(const Bitmap &src, unsigned x, unsigned y)
+{
+	for(unsigned px = 0; px < src.getWidth(); px++) {
+		for(unsigned py = 0; py < src.getHeight(); py++) {
+			this->setPixel(x+px, y+py, src.getPixel(px, py));
 		}
 	}
 }

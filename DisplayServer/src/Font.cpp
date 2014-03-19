@@ -89,5 +89,5 @@ void Font::renderText(const std::wstring &text, Bitmap *bitmap)
 	}
 
 	// resize the output bitmap and copy the text to it
-	bitmap->copyRectFromBitmap(tmpBitmap, min_x, min_y, max_x-min_x+1, max_y-min_y+1);
+	bitmap->extractRectFromBitmap(tmpBitmap, min_x, min_y, max_x-min_x+1, max_y-min_y+1);
 }

@@ -6,7 +6,7 @@
 #include <vector>
 
 class Bitmap {
-	private:
+	protected:
 		typedef    std::vector<uint8_t> BitmapData;
 
 		unsigned   m_width, m_height;
@@ -18,9 +18,9 @@ class Bitmap {
 		Bitmap(unsigned width, unsigned height);
 		~Bitmap();
 
-		void setSize(unsigned width, unsigned height);
+		virtual void setSize(unsigned width, unsigned height);
 
-		bool setPixel(unsigned x, unsigned y, bool enable)
+		virtual bool setPixel(unsigned x, unsigned y, bool enable)
 		{
 			if(x < m_width && y < m_height) {
 				unsigned bit = (y * m_width + x);
@@ -39,7 +39,7 @@ class Bitmap {
 			}
 		}
 
-		bool getPixel(unsigned x, unsigned y) const
+		virtual bool getPixel(unsigned x, unsigned y) const
 		{
 			if(x < m_width && y < m_height) {
 				unsigned bit = (y * m_width + x);
@@ -52,12 +52,23 @@ class Bitmap {
 			}
 		}
 
-		void copyRectFromBitmap(const Bitmap &src, unsigned x, unsigned y, unsigned w, unsigned h);
+		/*!
+		 * Copy data from a rectangular region in src to this Bitmap. The size of
+		 * this Bitmap is set to the size of the rectangle.
+		 */
+		virtual void extractRectFromBitmap(const Bitmap &src, unsigned x, unsigned y, unsigned w, unsigned h);
 
-		unsigned getWidth() const { return m_width; }
-		unsigned getHeight() const { return m_height; }
+		/*!
+		 * Copy another Bitmap to the current Bitmap at position (x,y).
+		 */
+		virtual void blit(const Bitmap &src, unsigned x, unsigned y);
 
-		void debugPrint(void) const;
+		virtual void clear(bool enable);
+
+		virtual unsigned getWidth() const { return m_width; }
+		virtual unsigned getHeight() const { return m_height; }
+
+		virtual void debugPrint(void) const;
 };
 
 #endif // BITMAP_H

@@ -1,11 +1,13 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#include <iostream>
 #include <string>
 
 #include "Font.h"
 #include "Logger.h"
 #include "Bitmap.h"
+#include "Framebuffer.h"
 
 #include "strutil.h"
 
@@ -14,6 +16,7 @@ using namespace std;
 int main(void)
 {
 	FT_Library ftlib;
+	Framebuffer fb;
 	int fterror = 0;
 
 	std::setlocale(LC_ALL, "en_US.UTF-8");
@@ -33,5 +36,9 @@ int main(void)
 	Bitmap textBitmap(0, 0);
 	testFont.renderText(testtext, &textBitmap);
 
-	textBitmap.debugPrint();
+	fb.blit(textBitmap, 0, 0);
+
+	std::string serialData;
+	fb.serialize(&serialData);
+	cout << serialData;
 }
