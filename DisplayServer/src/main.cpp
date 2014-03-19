@@ -29,5 +29,9 @@ int main(void)
 	Font testFont(&ftlib, "/usr/share/fonts/dejavu/DejaVuSans.ttf", 10);
 
 	std::wstring testtext = mb_to_wstring(u8"Hello FreeType! With Ünïĉødè: ∫x²dx=x³/₃");
-	testFont.renderText(testtext, NULL);
+
+	Bitmap textBitmap(0, 0);
+	testFont.renderText(testtext, &textBitmap);
+
+	textBitmap.debugPrint();
 }

@@ -39,7 +39,6 @@ void Font::renderText(const std::wstring &text, Bitmap *bitmap)
 	int fterror;
 	int pen_x = 0, pen_y = 10;
 	wchar_t c;
-	FT_UInt glyphIndex;
 
 	// create a temporary bitmap with sufficient size for the whole text
 	Bitmap tmpBitmap(m_size * text.length(), 3 * m_size / 2);
@@ -75,5 +74,20 @@ void Font::renderText(const std::wstring &text, Bitmap *bitmap)
 		pen_y += m_face->glyph->advance.y >> 6;
 	}
 
-	tmpBitmap.debugPrint();
+	// determine the actual dimensions of the text
+	unsigned min_x = 0xFFFFFFFF, min_y = 0xFFFFFFFF, max_x = 0, max_y = 0;
+
+	for(unsigned x = 0; x < tmpBitmap.getWidth(); x++) {
+		for(unsigned y = 0; y < tmpBitmap.getHeight(); y++) {
+			if(tmpBitmap.getPixel(x, y)) {
+				if(x < min_x) min_x = x;
+				if(y < min_y) min_y = y;
+				if(x > max_x) max_x = x;
+				if(y > max_y) max_y = y;
+			}
+		}
+	}
+
+	// resize the output bitmap and copy the text to it
+	bitmap->copyRectFromBitmap(tmpBitmap, min_x, min_y, max_x-min_x+1, max_y-min_y+1);
 }

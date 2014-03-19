@@ -26,7 +26,7 @@ void Bitmap::setSize(unsigned width, unsigned height)
 	resizeData();
 }
 
-void Bitmap::debugPrint(void)
+void Bitmap::debugPrint(void) const
 {
 	for(int y = 0; y < m_height; y++) {
 		for(int x = 0; x < m_width; x++) {
@@ -34,5 +34,16 @@ void Bitmap::debugPrint(void)
 		}
 
 		cout << endl;
+	}
+}
+
+void Bitmap::copyRectFromBitmap(const Bitmap &src, unsigned x, unsigned y, unsigned w, unsigned h)
+{
+	this->setSize(w, h);
+
+	for(unsigned px = 0; px < w; px++) {
+		for(unsigned py = 0; py < h; py++) {
+			this->setPixel(px, py, src.getPixel(x+px, y+py));
+		}
 	}
 }

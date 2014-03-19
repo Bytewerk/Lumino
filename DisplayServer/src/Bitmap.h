@@ -39,7 +39,7 @@ class Bitmap {
 			}
 		}
 
-		bool getPixel(unsigned x, unsigned y)
+		bool getPixel(unsigned x, unsigned y) const
 		{
 			if(x < m_width && y < m_height) {
 				unsigned bit = (y * m_width + x);
@@ -52,7 +52,12 @@ class Bitmap {
 			}
 		}
 
-		void debugPrint(void);
+		void copyRectFromBitmap(const Bitmap &src, unsigned x, unsigned y, unsigned w, unsigned h);
+
+		unsigned getWidth() const { return m_width; }
+		unsigned getHeight() const { return m_height; }
+
+		void debugPrint(void) const;
 };
 
 #endif // BITMAP_H
