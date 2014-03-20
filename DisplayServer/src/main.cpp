@@ -52,8 +52,8 @@ void demo(FT_Library *ftlib) {
 		textBitmap.clear(false);
 		demoFont.renderText(oss.str(), &textBitmap);
 
-		unsigned x = 80 - textBitmap.getWidth()/2  + 8 * cos(2 * M_PI * frameIndex / 100);
-		unsigned y = 12 - textBitmap.getHeight()/2 + 8 * sin(2 * M_PI * frameIndex / 100);
+		unsigned x = 80 - textBitmap.getWidth()/2  + 20 * cos(2 * M_PI * frameIndex / 200);
+		unsigned y = 12 - textBitmap.getHeight()/2 + 9 * sin(2 * M_PI * frameIndex / 191);
 		fb.blit(textBitmap, x, y);
 
 		fb.serialize(&serialData);
@@ -61,7 +61,7 @@ void demo(FT_Library *ftlib) {
 
 		frameIndex++;
 
-		//struct timespec ts = {0, 10 * 1000000};
+		//struct timespec ts = {0, 1000000000/60};
 		//nanosleep(&ts, NULL);
 	}
 }
