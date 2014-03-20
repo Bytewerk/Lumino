@@ -4,7 +4,8 @@
 #include <string>
 #include <sstream>
 
-#include <stdint.h>
+#include <cstdint>
+#include <cstring>
 
 class Exception
 {
@@ -40,6 +41,9 @@ class NetworkingException : public Exception
 		NetworkingException(const std::string &module, const std::string &message)
 			: Exception(module, message)
 		{
+			std::ostringstream oss;
+			oss << message << " [error: " << strerror(errno) << "]";
+			m_message = oss.str();
 		}
 
 		virtual const char* type() const { return "NetworkingException"; }

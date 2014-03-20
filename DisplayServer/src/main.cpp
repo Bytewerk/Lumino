@@ -13,6 +13,10 @@
 #include "Logger.h"
 #include "Bitmap.h"
 #include "Framebuffer.h"
+#include "Exception.h"
+
+#include "TCPServer.h"
+#include "TCPSocket.h"
 
 #include "strutil.h"
 
@@ -94,6 +98,21 @@ int main(void)
 	std::string serialData;
 	fb.serialize(&serialData);
 	cout << serialData;
+
+	try {
+		TCPServer server(12345);
+		server.start();
+
+		while(true) {
+			TCPSocket socket = server.acceptConnection();
+
+			socket.send("Please enter your name: ");
+			socket.send("Hello, " + socket.recv());
+		}
+	} catch(Exception &e) {
+		LOG(Logger::LVL_FATAL, "main", "Exception [%s]: %s", e.module().c_str(), e.message().c_str());
+		return 1;
+	}
 
 	demo(&ftlib);
 }
