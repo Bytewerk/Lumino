@@ -9,7 +9,6 @@ class Bitmap;
 
 class Font {
 	private:
-		FT_Library *m_ftlib;
 		FT_Face     m_face;
 		unsigned    m_size;
 

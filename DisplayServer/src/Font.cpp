@@ -11,7 +11,7 @@
 using namespace std;
 
 Font::Font(FT_Library *ftlib, const char *filename, unsigned size)
-	: m_ftlib(ftlib), m_size(size)
+	: m_size(size)
 {
 	// load the font object
 	int fterror;
