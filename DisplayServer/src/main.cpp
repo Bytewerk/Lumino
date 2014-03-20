@@ -2,6 +2,7 @@
 #include FT_FREETYPE_H
 
 #include <math.h>
+#include <signal.h>
 
 #include <iostream>
 #include <string>
@@ -17,6 +18,7 @@
 
 #include "TCPServer.h"
 #include "TCPSocket.h"
+#include "SocketSelector.h"
 
 #include "strutil.h"
 
@@ -80,6 +82,12 @@ int main(void)
 
 	LOG(Logger::LVL_INFO, "main", "This is DisplayServer v" VERSION);
 
+	// ignore SIGPIPE to prevent program shutdown on disconnected sockets
+	struct sigaction sa;
+	sa.sa_handler = SIG_IGN;
+	sigaction(SIGPIPE, &sa, NULL);
+
+	// initialize the freetype library
 	fterror = FT_Init_FreeType(&ftlib);
 	if(fterror) {
 		LOG(Logger::LVL_FATAL, "main", "Failed to initialize freetype: %i", fterror);
@@ -95,19 +103,33 @@ int main(void)
 
 	fb.blit(textBitmap, 0, 0);
 
-	std::string serialData;
-	fb.serialize(&serialData);
-	cout << serialData;
+	//std::string serialData;
+	//fb.serialize(&serialData);
+	//cout << serialData;
 
 	try {
 		TCPServer server(12345);
+		SocketSelector selector;
+
 		server.start();
 
 		while(true) {
-			TCPSocket socket = server.acceptConnection();
+			if(server.hasPendingConnection()) {
+				TCPSocket socket = server.acceptConnection();
+				socket.send("Please enter your name: ");
+				selector.addSocket(socket);
+			}
 
-			socket.send("Please enter your name: ");
-			socket.send("Hello, " + socket.recv());
+			selector.select();
+
+			for(TCPSocket socket : selector.getReadSockets()) {
+				try {
+					socket.send("Hello, " + socket.recv());
+				} catch(NetworkingException &e) {
+					socket.close();
+					selector.removeSocket(socket);
+				}
+			}
 		}
 	} catch(Exception &e) {
 		LOG(Logger::LVL_FATAL, "main", "Exception [%s]: %s", e.module().c_str(), e.message().c_str());

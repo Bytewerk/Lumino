@@ -7,6 +7,11 @@
 
 #include "TCPSocket.h"
 
+TCPSocket::TCPSocket(void)
+	: m_socket(0)
+{
+}
+
 TCPSocket::TCPSocket(int socket)
 	: m_socket(socket)
 {
@@ -17,12 +22,16 @@ TCPSocket::TCPSocket(const std::string &addr, uint16_t port)
 	throw Exception("TCPSocket", "Connecting is not implemented yet!");
 }
 
-TCPSocket::~TCPSocket()
+TCPSocket::TCPSocket(const TCPSocket &s)
+	: m_socket(s.m_socket)
 {
-	close(m_socket);
 }
 
-void TCPSocket::send(const std::string &data)
+TCPSocket::~TCPSocket()
+{
+}
+
+void TCPSocket::send(const std::string &data) const
 {
 	ssize_t bytesSent;
 	ssize_t totalBytes = 0;
@@ -38,7 +47,7 @@ void TCPSocket::send(const std::string &data)
 	} while(totalBytes < data.length());
 }
 
-std::string TCPSocket::recv(void)
+std::string TCPSocket::recv(void) const
 {
 	const unsigned BUFLEN = 256;
 	char buf[BUFLEN];
@@ -61,3 +70,7 @@ std::string TCPSocket::recv(void)
 	return data;
 }
 
+void TCPSocket::close(void)
+{
+	::close(m_socket);
+}
