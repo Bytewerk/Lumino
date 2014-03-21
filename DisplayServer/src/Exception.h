@@ -35,6 +35,20 @@ class IOException : public Exception
 		virtual const char* type() const { return "IOException"; }
 };
 
+class RangeException : public Exception
+{
+	public:
+		RangeException(const std::string &module, const std::string &message, int given, int needed)
+			: Exception(module, message)
+		{
+			std::ostringstream oss;
+			oss << message << " [given: " << given << "; needed: " << needed << "]";
+			m_message = oss.str();
+		}
+
+		virtual const char* type() const { return "RangeException"; }
+};
+
 class NetworkingException : public Exception
 {
 	public:

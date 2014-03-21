@@ -7,10 +7,12 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <map>
 
 #include <ctime>
 
 #include "Font.h"
+#include "Base64.h"
 #include "Logger.h"
 #include "Bitmap.h"
 #include "Framebuffer.h"
@@ -24,14 +26,24 @@
 
 using namespace std;
 
-void demo(FT_Library *ftlib) {
-	Framebuffer fb;
+typedef map<int, string> ClientDataMap;
+
+Framebuffer fb;
+FT_Library ftlib;
+
+void commit_screen(void) {
+	std::string serialData;
+	fb.serialize(&serialData);
+	cout << serialData << flush;
+}
+
+void demo(unsigned nframes) {
 	string serialData;
-	Font demoFont(ftlib, "/usr/share/fonts/dejavu/DejaVuSans.ttf", 10);
+	Font demoFont(&ftlib, "/usr/share/fonts/dejavu/DejaVuSans.ttf", 10);
 
 	unsigned frameIndex = 0;
 
-	while(true) {
+	while(frameIndex < nframes) {
 		fb.clear(false);
 
 		for(unsigned x = 0; x < Framebuffer::WIDTH/16; x++) {
@@ -62,20 +74,127 @@ void demo(FT_Library *ftlib) {
 		unsigned y = 12 - textBitmap.getHeight()/2 + 9 * sin(2 * M_PI * frameIndex / 191);
 		fb.blit(textBitmap, x, y);
 
-		fb.serialize(&serialData);
-		cout << serialData << flush;
+		commit_screen();
 
 		frameIndex++;
 
-		//struct timespec ts = {0, 1000000000/60};
+		//struct timespec ts = {0, 1000000000/24};
 		//nanosleep(&ts, NULL);
 	}
 }
 
+bool process_command(const string &line)
+{
+	static Base64 b64(Base64::DEFAULT_MAPPING);
+	static Font twoLineFont(&ftlib, "/usr/share/fonts/dejavu/DejaVuSans.ttf", 10);
+
+
+	vector<string> parts;
+	split(line, &parts);
+
+	// capture IOExceptions
+	try {
+		if(parts[0] == "demo") {
+			// demo takes 1 parameter: number of frames
+			if(parts.size() != 2) {
+				return false;
+			}
+
+			unsigned nframes = to_var<unsigned>(parts[1]);
+
+			demo(nframes);
+			return true;
+		} else if(parts[0] == "setpixel") {
+			// setpixel takes 3 parameters: x, y, enable
+			if(parts.size() != 4) {
+				return false;
+			}
+
+			unsigned x = to_var<unsigned>(parts[1]);
+			unsigned y = to_var<unsigned>(parts[2]);
+			bool enable = to_var<bool>(parts[3]);
+
+			fb.setPixel(x, y, enable);
+
+			return true;
+		} else if(parts[0] == "commit") {
+			commit_screen();
+			return true;
+		} else if(parts[0] == "clear") {
+			// clear takes 1 parameter: enable
+			if(parts.size() != 2) {
+				return false;
+			}
+
+			bool enable = to_var<bool>(parts[1]);
+
+			fb.clear(enable);
+			return true;
+		} else if(parts[0] == "drawbitmap") {
+			// drawbitmap takes 5 parameters: x y w h base64-data
+			if(parts.size() != 6) {
+				return false;
+			}
+
+			unsigned x = to_var<unsigned>(parts[1]);
+			unsigned y = to_var<unsigned>(parts[2]);
+			unsigned w = to_var<unsigned>(parts[3]);
+			unsigned h = to_var<unsigned>(parts[4]);
+			string data = b64.decode(parts[5]);
+
+			Bitmap bmp(w, h);
+			bmp.setData(data);
+
+			fb.blit(bmp, x, y);
+			return true;
+		} else if(parts[0] == "setfb") {
+			// setfb takes 1 parameter: data
+			if(parts.size() != 2) {
+				return false;
+			}
+
+			string data = b64.decode(parts[1]);
+
+			fb.setData(data);
+			return true;
+		} else if(parts[0] == "drawtext") {
+			// drawtext takes 3 parameter: x, y, text
+			if(parts.size() < 4) {
+				return false;
+			}
+
+			unsigned x = to_var<unsigned>(parts[1]);
+			unsigned y = to_var<unsigned>(parts[2]);
+
+			ostringstream utf8text;
+			for(unsigned i = 3; i < parts.size(); i++) {
+				utf8text << parts[i] << " ";
+			}
+
+			wstring text = mb_to_wstring(utf8text.str());
+
+			Bitmap textBitmap(0, 0);
+			textBitmap.clear(false);
+			twoLineFont.renderText(text, &textBitmap);
+
+			fb.blit(textBitmap, x, y);
+			return true;
+		}
+	} catch(IOException &e) {
+		LOG(Logger::LVL_ERR, "process_command", "IOException caught [%s]: %s", e.module().c_str(), e.message().c_str());
+		return false;
+	} catch(Exception &e) {
+		LOG(Logger::LVL_ERR, "process_command", "Exception caught [%s]: %s", e.module().c_str(), e.message().c_str());
+		return false;
+	}
+
+	// command not recognized
+	return false;
+}
+
 int main(void)
 {
-	FT_Library ftlib;
-	Framebuffer fb;
+	ClientDataMap clientData;
 	int fterror = 0;
 
 	std::setlocale(LC_ALL, "en_US.UTF-8");
@@ -94,19 +213,7 @@ int main(void)
 		return 1;
 	}
 
-	Font testFont(&ftlib, "/usr/share/fonts/dejavu/DejaVuSans.ttf", 10);
-
-	std::wstring testtext = mb_to_wstring(u8"Hello FreeType! With Ünïĉødè: ∫x²dx=x³/₃");
-
-	Bitmap textBitmap(0, 0);
-	testFont.renderText(testtext, &textBitmap);
-
-	fb.blit(textBitmap, 0, 0);
-
-	//std::string serialData;
-	//fb.serialize(&serialData);
-	//cout << serialData;
-
+	// start the server
 	try {
 		TCPServer server(12345);
 		SocketSelector selector;
@@ -116,16 +223,41 @@ int main(void)
 		while(true) {
 			if(server.hasPendingConnection()) {
 				TCPSocket socket = server.acceptConnection();
-				socket.send("Please enter your name: ");
+				socket.send("Welcome to DisplayServer v" VERSION "\n");
 				selector.addSocket(socket);
+
+				LOG(Logger::LVL_DEBUG, "main", "Client %i connected.", socket.getFileDescriptor());
+
+				clientData[socket.getFileDescriptor()] = "";
 			}
 
 			selector.select();
 
 			for(TCPSocket socket : selector.getReadSockets()) {
 				try {
-					socket.send("Hello, " + socket.recv());
+					string inData = socket.recv();
+
+					if(inData.empty()) {
+						// empty recv-data => socket closed on remote side
+						LOG(Logger::LVL_DEBUG, "main", "Client %i disconnected.", socket.getFileDescriptor());
+						socket.close();
+						selector.removeSocket(socket);
+					}
+
+					int fd = socket.getFileDescriptor();
+					clientData[fd].append(inData);
+
+					// check if a complete line was received
+					string line;
+					if(get_line_from_string(&(clientData[fd]), &line)) {
+						if(process_command(line)) {
+							socket.send("200 OK\n");
+						} else {
+							socket.send("405 Invalid Request\n");
+						}
+					}
 				} catch(NetworkingException &e) {
+					LOG(Logger::LVL_ERR, "main", "Exception caught [%s]: %s", e.module().c_str(), e.message().c_str());
 					socket.close();
 					selector.removeSocket(socket);
 				}
@@ -135,6 +267,4 @@ int main(void)
 		LOG(Logger::LVL_FATAL, "main", "Exception [%s]: %s", e.module().c_str(), e.message().c_str());
 		return 1;
 	}
-
-	demo(&ftlib);
 }

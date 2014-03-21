@@ -1,5 +1,7 @@
 #include <iostream>
 
+#include "Exception.h"
+
 #include "Bitmap.h"
 
 using namespace std;
@@ -24,6 +26,16 @@ void Bitmap::setSize(unsigned width, unsigned height)
 	m_width = width;
 	m_height = height;
 	resizeData();
+}
+
+void Bitmap::setData(const std::string &data) {
+	if(data.size() < m_data.size()) {
+		throw RangeException("Bitmap", "Data size is too small.", data.size(), m_data.size());
+	}
+
+	for(BitmapData::size_type i = 0; i < m_data.size(); i++) {
+		m_data[i] = data[i];
+	}
 }
 
 void Bitmap::debugPrint(void) const

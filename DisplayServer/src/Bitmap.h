@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include <vector>
+#include <string>
 
 class Bitmap {
 	protected:
@@ -51,6 +52,8 @@ class Bitmap {
 				return false;
 			}
 		}
+
+		virtual void setData(const std::string &data);
 
 		/*!
 		 * Copy data from a rectangular region in src to this Bitmap. The size of
