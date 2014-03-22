@@ -23,17 +23,20 @@
 #include "SocketSelector.h"
 
 #include "strutil.h"
+#include "timeutils.h"
 
 using namespace std;
 
 typedef map<int, string> ClientDataMap;
 
-Framebuffer fb;
+const double FRAME_INTERVAL = 1.0 / 24;
+
+Framebuffer *fb;
 FT_Library ftlib;
 
 void commit_screen(void) {
 	std::string serialData;
-	fb.serialize(&serialData);
+	fb->serialize(&serialData);
 	cout << serialData << flush;
 }
 
@@ -44,7 +47,7 @@ void demo(unsigned nframes) {
 	unsigned frameIndex = 0;
 
 	while(frameIndex < nframes) {
-		fb.clear(false);
+		fb->clear(false);
 
 		for(unsigned x = 0; x < Framebuffer::WIDTH/16; x++) {
 			for(unsigned y = 0; y < Framebuffer::HEIGHT; y++) {
@@ -59,7 +62,7 @@ void demo(unsigned nframes) {
 					mx = (16*x + (16 << 24) - frameIndex) % Framebuffer::WIDTH;
 				}
 
-				fb.setPixel(mx, y, true);
+				fb->setPixel(mx, y, true);
 			}
 		}
 
@@ -72,7 +75,7 @@ void demo(unsigned nframes) {
 
 		unsigned x = 80 - textBitmap.getWidth()/2  + 20 * cos(2 * M_PI * frameIndex / 200);
 		unsigned y = 12 - textBitmap.getHeight()/2 + 9 * sin(2 * M_PI * frameIndex / 191);
-		fb.blit(textBitmap, x, y);
+		fb->blit(textBitmap, x, y);
 
 		commit_screen();
 
@@ -86,8 +89,6 @@ void demo(unsigned nframes) {
 bool process_command(const string &line)
 {
 	static Base64 b64(Base64::DEFAULT_MAPPING);
-	static Font twoLineFont(&ftlib, "/usr/share/fonts/dejavu/DejaVuSans.ttf", 10);
-
 
 	vector<string> parts;
 	split(line, &parts);
@@ -114,7 +115,7 @@ bool process_command(const string &line)
 			unsigned y = to_var<unsigned>(parts[2]);
 			bool enable = to_var<bool>(parts[3]);
 
-			fb.setPixel(x, y, enable);
+			fb->setPixel(x, y, enable);
 
 			return true;
 		} else if(parts[0] == "commit") {
@@ -128,7 +129,7 @@ bool process_command(const string &line)
 
 			bool enable = to_var<bool>(parts[1]);
 
-			fb.clear(enable);
+			fb->clear(enable);
 			return true;
 		} else if(parts[0] == "drawbitmap") {
 			// drawbitmap takes 5 parameters: x y w h base64-data
@@ -145,7 +146,7 @@ bool process_command(const string &line)
 			Bitmap bmp(w, h);
 			bmp.setData(data);
 
-			fb.blit(bmp, x, y);
+			fb->blit(bmp, x, y);
 			return true;
 		} else if(parts[0] == "setfb") {
 			// setfb takes 1 parameter: data
@@ -155,7 +156,7 @@ bool process_command(const string &line)
 
 			string data = b64.decode(parts[1]);
 
-			fb.setData(data);
+			fb->setData(data);
 			return true;
 		} else if(parts[0] == "drawtext") {
 			// drawtext takes 3 parameter: x, y, text
@@ -173,11 +174,40 @@ bool process_command(const string &line)
 
 			wstring text = mb_to_wstring(utf8text.str());
 
-			Bitmap textBitmap(0, 0);
-			textBitmap.clear(false);
-			twoLineFont.renderText(text, &textBitmap);
+			fb->drawText(x, y, text);
 
-			fb.blit(textBitmap, x, y);
+			return true;
+		} else if(parts[0] == "settext") {
+			// settext takes 2 parameters: line, text
+			if(parts.size() < 3) {
+				return false;
+			}
+
+			unsigned line = to_var<unsigned>(parts[1]);
+
+			ostringstream utf8text;
+			for(unsigned i = 2; i < parts.size(); i++) {
+				utf8text << parts[i] << " ";
+			}
+
+			wstring text = mb_to_wstring(utf8text.str());
+
+			fb->setText(line, text);
+
+			return true;
+		} else if(parts[0] == "settextarea") {
+			// settext takes 4 parameters: x, y, w, h
+			if(parts.size() != 5) {
+				return false;
+			}
+
+			unsigned x = to_var<unsigned>(parts[1]);
+			unsigned y = to_var<unsigned>(parts[2]);
+			unsigned w = to_var<unsigned>(parts[3]);
+			unsigned h = to_var<unsigned>(parts[4]);
+
+			fb->setTextArea(x, y, w, h);
+
 			return true;
 		}
 	} catch(IOException &e) {
@@ -197,6 +227,8 @@ int main(void)
 	ClientDataMap clientData;
 	int fterror = 0;
 
+	double nextFrameTime = get_hires_time() + FRAME_INTERVAL;
+
 	std::setlocale(LC_ALL, "en_US.UTF-8");
 
 	LOG(Logger::LVL_INFO, "main", "This is DisplayServer v" VERSION);
@@ -212,6 +244,8 @@ int main(void)
 		LOG(Logger::LVL_FATAL, "main", "Failed to initialize freetype: %i", fterror);
 		return 1;
 	}
+
+	fb = new Framebuffer(&ftlib);
 
 	// start the server
 	try {
@@ -249,7 +283,7 @@ int main(void)
 
 					// check if a complete line was received
 					string line;
-					if(get_line_from_string(&(clientData[fd]), &line)) {
+					while(get_line_from_string(&(clientData[fd]), &line)) {
 						if(process_command(line)) {
 							socket.send("200 OK\n");
 						} else {
@@ -262,9 +296,21 @@ int main(void)
 					selector.removeSocket(socket);
 				}
 			}
+
+			// redraw and scroll text
+			fb->shiftText();
+			fb->redrawText();
+
+			commit_screen();
+
+			// FPS limiter
+			sleep_until(nextFrameTime);
+			nextFrameTime += FRAME_INTERVAL;
 		}
 	} catch(Exception &e) {
 		LOG(Logger::LVL_FATAL, "main", "Exception [%s]: %s", e.module().c_str(), e.message().c_str());
 		return 1;
 	}
+
+	delete fb;
 }

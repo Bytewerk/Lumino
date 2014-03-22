@@ -33,7 +33,7 @@ void SocketSelector::removeSocket(const TCPSocket &s)
 void SocketSelector::select()
 {
 	fd_set rfds, wfds;
-	struct timeval tv = {3, 0};
+	struct timeval tv = {0, 0};
 
 	// fill the sets
 	for(auto &kv: m_sockets) {

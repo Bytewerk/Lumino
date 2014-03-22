@@ -49,12 +49,12 @@ void Bitmap::debugPrint(void) const
 	}
 }
 
-void Bitmap::extractRectFromBitmap(const Bitmap &src, unsigned x, unsigned y, unsigned w, unsigned h)
+void Bitmap::extractRectFromBitmap(const Bitmap &src, int x, int y, unsigned w, unsigned h)
 {
 	this->setSize(w, h);
 
-	for(unsigned px = 0; px < w; px++) {
-		for(unsigned py = 0; py < h; py++) {
+	for(int px = 0; px < w; px++) {
+		for(int py = 0; py < h; py++) {
 			this->setPixel(px, py, src.getPixel(x+px, y+py));
 		}
 	}
@@ -75,10 +75,10 @@ void Bitmap::clear(bool enable)
 	}
 }
 
-void Bitmap::blit(const Bitmap &src, unsigned x, unsigned y)
+void Bitmap::blit(const Bitmap &src, int x, int y)
 {
-	for(unsigned px = 0; px < src.getWidth(); px++) {
-		for(unsigned py = 0; py < src.getHeight(); py++) {
+	for(int px = 0; px < src.getWidth(); px++) {
+		for(int py = 0; py < src.getHeight(); py++) {
 			this->setPixel(x+px, y+py, src.getPixel(px, py));
 		}
 	}
