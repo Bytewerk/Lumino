@@ -29,7 +29,7 @@ using namespace std;
 
 typedef map<int, string> ClientDataMap;
 
-const double FRAME_INTERVAL = 1.0 / 24;
+const double FRAME_INTERVAL = 1.0 / 15;
 
 Framebuffer *fb;
 FT_Library ftlib;

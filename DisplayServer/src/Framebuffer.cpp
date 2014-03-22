@@ -80,7 +80,7 @@ void Framebuffer::redrawText(void)
 
 	// clear the text area
 	for(int dx = 0; dx < m_textArea.w; dx++) {
-		for(int dy = 0; dy < m_textArea.w; dy++) {
+		for(int dy = 0; dy < m_textArea.h; dy++) {
 			this->setPixel(m_textArea.x + dx, m_textArea.y + dy, 0);
 		}
 	}

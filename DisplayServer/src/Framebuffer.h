@@ -12,7 +12,7 @@
 class Framebuffer : public Bitmap
 {
 	public:
-		static const int OVERSCROLL = 10;
+		static const int OVERSCROLL = 20;
 		static const int LINEHEIGHT = 11;
 
 		struct TextArea {
