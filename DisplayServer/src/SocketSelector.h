@@ -17,6 +17,8 @@ class SocketSelector {
 
 		SocketList m_readSockets, m_writeSockets;
 
+		void updateMaxFD(void);
+
 	public:
 		SocketSelector();
 
