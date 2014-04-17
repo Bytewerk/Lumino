@@ -29,7 +29,7 @@ class Framebuffer : public Bitmap
 				w = h = 0;
 			}
 
-			bool isClear(void)
+			bool isClear(void) const
 			{
 				return (w == 0) && (h == 0);
 			}
@@ -59,6 +59,7 @@ class Framebuffer : public Bitmap
 		void setText(unsigned line, const std::wstring &text);
 
 		void setTextArea(int x, int y, unsigned w, unsigned h);
+		const struct TextArea* getTextArea() const { return &m_textArea; }
 };
 
 #endif // FRAMEBUFFER_H

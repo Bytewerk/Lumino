@@ -298,10 +298,12 @@ int main(void)
 			}
 
 			// redraw and scroll text
-			fb->shiftText();
-			fb->redrawText();
+			if(!fb->getTextArea()->isClear()) {
+				fb->shiftText();
+				fb->redrawText();
 
-			commit_screen();
+				commit_screen();
+			}
 
 			// FPS limiter
 			sleep_until(nextFrameTime);
