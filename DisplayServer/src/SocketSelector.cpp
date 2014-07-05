@@ -61,6 +61,9 @@ void SocketSelector::select()
 		return;
 	}
 
+	FD_ZERO(&rfds);
+	FD_ZERO(&wfds);
+
 	// fill the sets
 	for(auto &kv: m_sockets) {
 		FD_SET(kv.first, &rfds);
