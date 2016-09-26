@@ -18,7 +18,15 @@ Bitmap::~Bitmap()
 
 void Bitmap::resizeData(void)
 {
-	m_data.resize(m_width * m_height / 8 + 1);
+	if(((m_width * m_height) % 8) == 0) {
+		// if pixel count is divisible by 8, data fits perfectly into bytes.
+		m_data.resize(m_width * m_height / 8);
+	} else {
+		// if pixel count is not divisible by 8, an additional byte is needed.
+		// example: 3x6 bitmap -> 18 pixels / 8 = 2 -> 2 + 1 bytes of storage are
+		// required for 18 bits
+		m_data.resize(m_width * m_height / 8 + 1);
+	}
 }
 
 void Bitmap::setSize(unsigned width, unsigned height)
