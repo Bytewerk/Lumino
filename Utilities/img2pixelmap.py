@@ -61,10 +61,6 @@ def generateBase64String(bit_string):
 		filled_string = "0" * (8 - len(bit_string)) + bit_string
 		byte_array = [int(filled_string, 2)] + byte_array
 
-	# This is a workaround for a bug in the display server. If the total image size is dividable by 8 it needs another byte.
-	if img.width * img.height / 8 == 0:
-		byte_array.append(255)
-	
 	# Cast the fake byte_array into an actual bytearray and encode it to receive the desired string
 	b64 = base64.b64encode(bytearray(byte_array))
 	return b64.decode("UTF-8")
