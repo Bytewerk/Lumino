@@ -1,0 +1,85 @@
+# --- START OF CONFIG ---------------------------------------------------
+# Edit the following variables for your own needs
+
+# toolchain configuration
+CXX=armv6j-hardfloat-linux-gnueabi-g++
+LD=armv6j-hardfloat-linux-gnueabi-g++
+
+# default build configuration
+# "make BUILD=release" does a release build
+BUILD:=debug
+
+# basic build flags configuration
+CFLAGS+=-Os -std=c++0x -pipe -march=armv6zk -mcpu=arm1176jzf-s -mtune=arm1176jzf-s -mfpu=vfp -mfloat-abi=hard -pthread
+LIBS+=-pthread -lrt
+
+# library specific flags
+## libmicrohttpd
+CFLAGS+=-I /usr/armv6j-hardfloat-linux-gnueabi/usr/include/freetype2/
+LIBS+=-L /usr/armv6j-hardfloat-linux-gnueabi/usr/lib -l freetype
+#
+# build type specific flags
+CFLAGS_debug=-O0 -ggdb -DDEBUG
+LIBS_debug=
+
+CFLAGS_release=-O3
+LIBS_release=
+
+# target configuration
+TARGET := displayserver
+VERSION := 0.2.0
+VCSVERSION := $(shell git rev-parse --short HEAD)
+
+# source files for the project
+SOURCE := $(shell find src/ -name '*.cpp')
+INCLUDES := $(shell find src/ -name '*.h')
+
+# additional dependencies for build (proper targets must be specified by user)
+DEPS :=
+
+# default target
+all: $(TARGET)
+
+# user-specific targets
+
+# --- END OF CONFIG -----------------------------------------------------
+
+OBJ1=$(patsubst %.cpp, %.o, $(SOURCE))
+OBJ=$(patsubst src/%, obj/$(BUILD)/%, $(OBJ1))
+
+VERSIONSTR="\"$(VERSION)-$(VCSVERSION)\""
+
+CFLAGS+=-DVERSION=$(VERSIONSTR)
+
+TARGETFILE := bin/$(BUILD)/$(TARGET)
+
+CFLAGS+=$(CFLAGS_$(BUILD))
+LIBS+=$(LIBS_$(BUILD))
+
+.PHONY show_cflags:
+	@echo --- Build parameters:  ------------------------------------------
+	@echo CFLAGS\=$(CFLAGS)
+	@echo LIBS\=$(LIBS)
+	@echo SOURCE\=$(SOURCE)
+	@echo -----------------------------------------------------------------
+
+$(TARGET): show_cflags $(TARGETFILE)
+	@echo ">>> $(BUILD) build complete."
+
+$(TARGETFILE): $(DEPS) $(OBJ) $(INCLUDES) Makefile
+	@echo Linking $@ ...
+	@mkdir -p $(shell dirname $@)
+	@$(LD) -o $(TARGETFILE) $(OBJ) $(LIBS)
+
+obj/$(BUILD)/%.o: src/%.cpp $(INCLUDES) Makefile
+	@echo "Compiling $< ..."
+	@mkdir -p $(shell dirname $@)
+	@$(CXX) -c $(CFLAGS) -o $@ $<
+
+doc:
+	doxygen doxygen.conf
+
+clean:
+	rm -f $(TARGETFILE)
+	rm -f $(OBJ)
+
