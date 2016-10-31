@@ -5,6 +5,8 @@
 
 #include "Framebuffer.h"
 
+#include "config.h"
+
 Framebuffer::Framebuffer(FT_Library *ftlib)
 	: Bitmap(Framebuffer::WIDTH, Framebuffer::HEIGHT)
 {
@@ -12,7 +14,7 @@ Framebuffer::Framebuffer(FT_Library *ftlib)
 
 	m_textBitmaps[0] = new Bitmap(0, 0);
 	m_textBitmaps[1] = new Bitmap(0, 0);
-	m_font = new Font(ftlib, "/usr/share/fonts/dejavu/DejaVuSans.ttf", 10);
+	m_font = new Font(ftlib, FONT_FILENAME, 10);
 }
 
 Framebuffer::~Framebuffer()

@@ -25,6 +25,8 @@
 #include "strutil.h"
 #include "timeutils.h"
 
+#include "config.h"
+
 using namespace std;
 
 typedef map<int, string> ClientDataMap;
@@ -42,7 +44,7 @@ void commit_screen(void) {
 
 void demo(unsigned nframes) {
 	string serialData;
-	Font demoFont(&ftlib, "/usr/share/fonts/dejavu/DejaVuSans.ttf", 10);
+	Font demoFont(&ftlib, FONT_FILENAME, 10);
 
 	unsigned frameIndex = 0;
 
