@@ -76,6 +76,9 @@ obj/$(BUILD)/%.o: src/%.c $(INCLUDES) Makefile
 	@mkdir -p $(shell dirname $@)
 	@$(CXX) -c $(CFLAGS) -o $@ $<
 
+run: $(TARGETFILE)
+	../DisplayServer/bin/debug/displayserver | $(TARGETFILE)
+
 doc:
 	doxygen doxygen.conf
 
