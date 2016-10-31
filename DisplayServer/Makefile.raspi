@@ -27,7 +27,7 @@ LIBS_release=
 
 # target configuration
 TARGET := displayserver
-VERSION := 0.2.0
+VERSION := 0.3.0
 VCSVERSION := $(shell git rev-parse --short HEAD)
 
 # source files for the project
