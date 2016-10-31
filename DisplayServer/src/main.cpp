@@ -29,20 +29,28 @@
 
 using namespace std;
 
-typedef map<int, string> ClientDataMap;
+struct ClientData {
+	string recvData;
+	Framebuffer *fb;
+
+	unsigned priority; // lower numbers take precedence
+
+	bool shouldRedraw;
+};
+
+typedef map<int, ClientData> ClientDataMap;
 
 const double FRAME_INTERVAL = 1.0 / 15;
 
-Framebuffer *fb;
 FT_Library ftlib;
 
-void commit_screen(void) {
+void commit_screen(Framebuffer *fb) {
 	std::string serialData;
 	fb->serialize(&serialData);
 	cout << serialData << flush;
 }
 
-void demo(unsigned nframes) {
+void demo(Framebuffer *fb, unsigned nframes) {
 	string serialData;
 	Font demoFont(&ftlib, FONT_FILENAME, 10);
 
@@ -79,7 +87,7 @@ void demo(unsigned nframes) {
 		unsigned y = 12 - textBitmap.getHeight()/2 + 9 * sin(2 * M_PI * frameIndex / 191);
 		fb->blit(textBitmap, x, y);
 
-		commit_screen();
+		commit_screen(fb); // FIXME: use priority system
 
 		frameIndex++;
 
@@ -88,9 +96,16 @@ void demo(unsigned nframes) {
 	}
 }
 
-bool process_command(const string &line)
+/*
+ * process the given command for the given client.
+ *
+ * Returns 0 for syntax errors, 1 for normal updates, 2 for prio changes.
+ */
+int process_command(ClientData &data, const string &line)
 {
 	static Base64 b64(Base64::DEFAULT_MAPPING);
+
+	Framebuffer *fb = data.fb;
 
 	vector<string> parts;
 	split(line, &parts);
@@ -100,17 +115,17 @@ bool process_command(const string &line)
 		if(parts[0] == "demo") {
 			// demo takes 1 parameter: number of frames
 			if(parts.size() != 2) {
-				return false;
+				return 0;
 			}
 
 			unsigned nframes = to_var<unsigned>(parts[1]);
 
-			demo(nframes);
-			return true;
+			demo(fb, nframes);
+			return 1;
 		} else if(parts[0] == "setpixel") {
 			// setpixel takes 3 parameters: x, y, enable
 			if(parts.size() != 4) {
-				return false;
+				return 0;
 			}
 
 			unsigned x = to_var<unsigned>(parts[1]);
@@ -119,24 +134,24 @@ bool process_command(const string &line)
 
 			fb->setPixel(x, y, enable);
 
-			return true;
+			return 1;
 		} else if(parts[0] == "commit") {
-			commit_screen();
-			return true;
+			data.shouldRedraw = true;
+			return 1;
 		} else if(parts[0] == "clear") {
 			// clear takes 1 parameter: enable
 			if(parts.size() != 2) {
-				return false;
+				return 0;
 			}
 
 			bool enable = to_var<bool>(parts[1]);
 
 			fb->clear(enable);
-			return true;
+			return 1;
 		} else if(parts[0] == "drawbitmap") {
 			// drawbitmap takes 5 parameters: x y w h base64-data
 			if(parts.size() != 6) {
-				return false;
+				return 0;
 			}
 
 			unsigned x = to_var<unsigned>(parts[1]);
@@ -149,21 +164,21 @@ bool process_command(const string &line)
 			bmp.setData(data);
 
 			fb->blit(bmp, x, y);
-			return true;
+			return 1;
 		} else if(parts[0] == "setfb") {
 			// setfb takes 1 parameter: data
 			if(parts.size() != 2) {
-				return false;
+				return 0;
 			}
 
 			string data = b64.decode(parts[1]);
 
 			fb->setData(data);
-			return true;
+			return 1;
 		} else if(parts[0] == "drawtext") {
 			// drawtext takes 3 parameter: x, y, text
 			if(parts.size() < 4) {
-				return false;
+				return 0;
 			}
 
 			unsigned x = to_var<unsigned>(parts[1]);
@@ -178,11 +193,11 @@ bool process_command(const string &line)
 
 			fb->drawText(x, y, text);
 
-			return true;
+			return 1;
 		} else if(parts[0] == "settext") {
 			// settext takes 2 parameters: line, text
 			if(parts.size() < 3) {
-				return false;
+				return 0;
 			}
 
 			unsigned line = to_var<unsigned>(parts[1]);
@@ -196,11 +211,11 @@ bool process_command(const string &line)
 
 			fb->setText(line, text);
 
-			return true;
+			return 1;
 		} else if(parts[0] == "settextarea") {
 			// settext takes 4 parameters: x, y, w, h
 			if(parts.size() != 5) {
-				return false;
+				return 0;
 			}
 
 			unsigned x = to_var<unsigned>(parts[1]);
@@ -210,24 +225,61 @@ bool process_command(const string &line)
 
 			fb->setTextArea(x, y, w, h);
 
-			return true;
+			return 1;
+		} else if(parts[0] == "setprio") {
+			// setprio takes 1 parameter: priority
+			if(parts.size() != 2) {
+				return 0;
+			}
+
+			data.priority = to_var<unsigned>(parts[1]);
+
+			return 2;
 		}
 	} catch(IOException &e) {
 		LOG(Logger::LVL_ERR, "process_command", "IOException caught [%s]: %s", e.module().c_str(), e.message().c_str());
-		return false;
+		return 0;
 	} catch(Exception &e) {
 		LOG(Logger::LVL_ERR, "process_command", "Exception caught [%s]: %s", e.module().c_str(), e.message().c_str());
-		return false;
+		return 0;
 	}
 
 	// command not recognized
-	return false;
+	return 0;
+}
+
+/*
+ * Returns the maximum priority framebuffer or NULL if the map is empty.
+ */
+ClientData* findMaxPrioClient(ClientDataMap &data)
+{
+	unsigned maxPrio = 0xFFFFFFFF;
+	ClientData *maxPrioClient = NULL;
+
+	for(auto &kv: data) {
+		if(kv.second.priority < maxPrio) {
+			maxPrio = kv.second.priority;
+			maxPrioClient = &(kv.second);
+		}
+	}
+
+	return maxPrioClient;
+}
+
+void eraseClient(ClientDataMap &data, int fd)
+{
+	delete data[fd].fb;
+	data.erase(fd);
 }
 
 int main(void)
 {
 	ClientDataMap clientData;
 	int fterror = 0;
+
+	ClientData *curClient = NULL;
+
+	bool clientChanged = false;
 
 	double nextFrameTime = get_hires_time() + FRAME_INTERVAL;
 
@@ -247,8 +299,6 @@ int main(void)
 		return 1;
 	}
 
-	fb = new Framebuffer(&ftlib);
-
 	// start the server
 	try {
 		TCPServer server(12345);
@@ -264,7 +314,16 @@ int main(void)
 
 				LOG(Logger::LVL_DEBUG, "main", "Client %i connected.", socket.getFileDescriptor());
 
-				clientData[socket.getFileDescriptor()] = "";
+				ClientData newClient = {
+					"",
+					new Framebuffer(&ftlib),
+					0x80000000,
+					true
+				};
+
+				clientData[socket.getFileDescriptor()] = newClient;
+
+				clientChanged = true;
 			}
 
 			selector.select();
@@ -278,33 +337,61 @@ int main(void)
 						LOG(Logger::LVL_DEBUG, "main", "Client %i disconnected.", socket.getFileDescriptor());
 						socket.close();
 						selector.removeSocket(socket);
+						eraseClient(clientData, socket.getFileDescriptor());
+						clientChanged = true;
+						break;
 					}
 
 					int fd = socket.getFileDescriptor();
-					clientData[fd].append(inData);
+					clientData[fd].recvData.append(inData);
 
 					// check if a complete line was received
 					string line;
-					while(get_line_from_string(&(clientData[fd]), &line)) {
-						if(process_command(line)) {
-							socket.send("200 OK\n");
-						} else {
-							socket.send("405 Invalid Request\n");
+					while(get_line_from_string(&(clientData[fd].recvData), &line)) {
+						int result = process_command(clientData[fd], line);
+						switch(result) {
+							case 2:
+								clientChanged = true;
+								/* fallthrough */
+							case 1:
+								if(&(clientData[fd]) == curClient) {
+									socket.send("200 OK\n");
+								} else {
+									socket.send("201 Deferred\n");
+								}
+								break;
+
+							default:
+								socket.send("405 Invalid Request\n");
+								break;
 						}
 					}
 				} catch(NetworkingException &e) {
 					LOG(Logger::LVL_ERR, "main", "Exception caught [%s]: %s", e.module().c_str(), e.message().c_str());
 					socket.close();
 					selector.removeSocket(socket);
+					eraseClient(clientData, socket.getFileDescriptor());
+					clientChanged = true;
+					break;
 				}
 			}
 
-			// redraw and scroll text
-			if(!fb->getTextArea()->isClear()) {
-				fb->shiftText();
-				fb->redrawText();
+			if(clientChanged) {
+				curClient = findMaxPrioClient(clientData);
 
-				commit_screen();
+				LOG(Logger::LVL_DEBUG, "main", "Selected new client: %016p", curClient);
+
+				clientChanged = false;
+			}
+
+			// redraw and scroll text
+			if(curClient && (curClient->shouldRedraw || !curClient->fb->getTextArea()->isClear())) {
+				curClient->fb->shiftText();
+				curClient->fb->redrawText();
+
+				commit_screen(curClient->fb);
+
+				curClient->shouldRedraw = false;
 			}
 
 			// FPS limiter
@@ -315,6 +402,4 @@ int main(void)
 		LOG(Logger::LVL_FATAL, "main", "Exception [%s]: %s", e.module().c_str(), e.message().c_str());
 		return 1;
 	}
-
-	delete fb;
 }

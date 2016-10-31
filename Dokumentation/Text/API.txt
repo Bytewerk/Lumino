@@ -48,5 +48,9 @@ Im Folgenden sind <argumente> Pflicht und [argumente] optional.
 	- Lösche den vordefinierten Textbereich. Dies macht das Display wieder
 		vollständig für eigene Zeichnungen nutzbar.
 
+- setprio <prio>
+	- Sets the current client’s priority. prio is a decimal value for an
+		unsigned integer.
+
 - demo
 	- Eine vordefinierte Animation zum Testen des Displays
