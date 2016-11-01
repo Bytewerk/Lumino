@@ -32,6 +32,7 @@ Font::Font(FT_Library *ftlib, const char *filename, unsigned size)
 
 Font::~Font()
 {
+	FT_Done_Face(m_face);
 }
 
 void Font::renderText(const std::wstring &text, Bitmap *bitmap)

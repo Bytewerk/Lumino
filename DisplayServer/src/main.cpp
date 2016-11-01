@@ -402,4 +402,6 @@ int main(void)
 		LOG(Logger::LVL_FATAL, "main", "Exception [%s]: %s", e.module().c_str(), e.message().c_str());
 		return 1;
 	}
+
+	FT_Done_FreeType(ftlib);
 }
